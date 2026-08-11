@@ -75,6 +75,8 @@ module.exports = (io, socket) => {
     if (game) {
       socket.emit('game_state_sync', {
         fen: game.chess.fen(),
+        whiteId: game.whiteId,
+        blackId: game.blackId,
         whiteTimeLeftMs: game.whiteTimeLeftMs,
         blackTimeLeftMs: game.blackTimeLeftMs,
         lastMoveTime: game.lastMoveTime,
@@ -158,8 +160,17 @@ module.exports = (io, socket) => {
       }
 
     } catch (err) {
+      console.error('Make Move Error:', err);
       socket.emit('error', { message: err.message });
     }
+  });
+
+  socket.on('send_message', ({ gameId, text, username }) => {
+    io.to(`game_${gameId}`).emit('receive_message', {
+      text,
+      username,
+      timestamp: Date.now()
+    });
   });
 
   socket.on('resign', async ({ gameId, userId }) => {

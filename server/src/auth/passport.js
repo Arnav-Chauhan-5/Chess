@@ -18,6 +18,11 @@ const handleOAuthCallback = async (provider, profile, done) => {
   }
 };
 
+const getCallbackUrl = (provider) => {
+  const baseUrl = process.env.API_URL || 'http://localhost:3000';
+  return `${baseUrl}/auth/${provider}/callback`;
+};
+
 // Google Strategy
 const googleId = process.env.GOOGLE_CLIENT_ID || 'missing_google_client_id';
 const googleSecret = process.env.GOOGLE_CLIENT_SECRET || 'missing_google_secret';
@@ -28,7 +33,7 @@ if (googleId === 'missing_google_client_id') {
 passport.use(new GoogleStrategy({
   clientID: googleId,
   clientSecret: googleSecret,
-  callbackURL: "/auth/google/callback"
+  callbackURL: getCallbackUrl('google')
 }, (accessToken, refreshToken, profile, done) => {
   handleOAuthCallback('google', profile, done);
 }));
@@ -43,7 +48,7 @@ if (githubId === 'missing_github_client_id') {
 passport.use(new GitHubStrategy({
   clientID: githubId,
   clientSecret: githubSecret,
-  callbackURL: "/auth/github/callback"
+  callbackURL: getCallbackUrl('github')
 }, (accessToken, refreshToken, profile, done) => {
   handleOAuthCallback('github', profile, done);
 }));

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useSocket } from '../hooks/useSocket';
 import { useAuth } from '../context/AuthContext';
-import { Play, Users, Zap, Flame, Snail, Timer, Hash } from 'lucide-react';
+import { Play, Users, Zap, Flame, Snail, Timer, Hash, Bot } from 'lucide-react';
 
 const PRESETS = [
   { label: '1+0', icon: Zap },
@@ -10,6 +10,14 @@ const PRESETS = [
   { label: '5+0', icon: Flame },
   { label: '10+0', icon: Timer },
   { label: '15+10', icon: Snail }
+];
+
+const AI_BOTS = [
+  { label: 'Beginner', rating: 800, style: 'Positional', difficulty: 1 },
+  { label: 'Club Player', rating: 1200, style: 'Tactical', difficulty: 3 },
+  { label: 'Expert', rating: 1800, style: 'Aggressive', difficulty: 5 },
+  { label: 'Master', rating: 2400, style: 'Solid', difficulty: 8 },
+  { label: 'Grandmaster', rating: 2800, style: 'Universal', difficulty: 10 },
 ];
 
 export default function Lobby() {
@@ -142,8 +150,18 @@ export default function Lobby() {
     }
   };
 
+  const handleStartAIGame = (bot) => {
+    if (!user) return alert('Please login first');
+    socket.emit('start_ai_game', { 
+      userId: user.id, 
+      difficulty: bot.difficulty,
+      timeControlSec: 600, // Default 10 mins
+      incrementSec: 0
+    });
+  };
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem', padding: '2rem', maxWidth: '1200px', margin: '0 auto' }} className="lobby-grid">
+    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '2rem', padding: '2rem', maxWidth: '1400px', margin: '0 auto' }} className="lobby-grid">
       
       {/* LEFT COLUMN: Pairing & Seeks */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -236,6 +254,50 @@ export default function Lobby() {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+
+      {/* MIDDLE COLUMN: Play vs AI */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        <div className="glass-panel animate-fade-in" style={{ padding: '2rem', flex: 1, animationDelay: '0.15s' }}>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', fontSize: '1.25rem' }}>
+            <Bot size={20} color="var(--accent-color)" /> Play vs AI
+          </h2>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {AI_BOTS.map((bot, i) => (
+              <button 
+                key={bot.label}
+                onClick={() => handleStartAIGame(bot)}
+                className="ai-bot-btn"
+                style={{ 
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  background: 'rgba(255,255,255,0.03)', 
+                  border: '1px solid rgba(255,255,255,0.1)', 
+                  padding: '1rem 1.25rem',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  animation: `fadeIn 0.3s ease forwards ${i * 0.1}s`,
+                  textAlign: 'left'
+                }}
+              >
+                <div>
+                  <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
+                    {bot.label} <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 'normal' }}>({bot.rating})</span>
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    Style: {bot.style}
+                  </div>
+                </div>
+                <div style={{ background: 'var(--accent-color)', color: 'white', padding: '0.4rem 1rem', borderRadius: '4px', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                  Play
+                </div>
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -371,6 +433,11 @@ export default function Lobby() {
         .preset-btn:hover .preset-icon {
           color: var(--accent-color) !important;
         }
+        .ai-bot-btn:hover {
+          background: rgba(255,255,255,0.08) !important;
+          transform: translateY(-2px);
+          border-color: var(--accent-color) !important;
+        }
         .seek-row:hover {
           background: rgba(255,255,255,0.03) !important;
         }
@@ -382,7 +449,12 @@ export default function Lobby() {
         .text-danger { color: #ef4444; }
         .text-secondary { color: var(--text-secondary); }
         
-        @media (max-width: 900px) {
+        @media (max-width: 1100px) {
+          .lobby-grid {
+            grid-template-columns: 1fr 1fr !important;
+          }
+        }
+        @media (max-width: 768px) {
           .lobby-grid {
             grid-template-columns: 1fr !important;
           }

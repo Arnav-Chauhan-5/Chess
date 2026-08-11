@@ -63,13 +63,30 @@ providers.forEach(provider => {
   }));
   
   router.get(`/${provider}/callback`, 
-    passport.authenticate(provider, { session: false, failureRedirect: '/login?error=oauth_failed' }),
+    (req, res, next) => {
+      console.log(`[OAuth Callback] Provider: ${provider}, Code: ${req.query.code}, Time: ${Date.now()}`);
+      next();
+    },
+    (req, res, next) => {
+      passport.authenticate(provider, { session: false }, (err, user, info) => {
+        if (err) {
+          console.error(`[OAuth Error] Provider: ${provider}`);
+          console.error(err);
+          if (err.oauthError) console.error('[OAuth oauthError]', err.oauthError);
+          if (err.body) console.error('[OAuth body]', err.body);
+          if (err.internal) console.error('[OAuth internal]', err.internal);
+          return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/login?error=oauth_failed`);
+        }
+        if (!user) {
+          return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/login?error=oauth_failed`);
+        }
+        req.user = user;
+        next();
+      })(req, res, next);
+    },
     (req, res) => {
-      // Because we used authService in the passport strategy, req.user already contains the DB user object.
-      // We just need to generate the tokens for it here since passport handles the auth flow.
       const tokens = authService.generateTokens(req.user);
       
-      // Set the refresh token cookie
       res.cookie('refreshToken', tokens.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -77,9 +94,6 @@ providers.forEach(provider => {
         maxAge: 7 * 24 * 60 * 60 * 1000
       });
 
-      // Redirect back to frontend with the access token in URL fragment or query parameter (less secure, fragment is better)
-      // or we can just redirect to a success page that posts a message to the opener.
-      // For MVP, a simple redirect with access token in query param.
       res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/?token=${tokens.accessToken}`);
     }
   );

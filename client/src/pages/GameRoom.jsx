@@ -17,6 +17,9 @@ export default function GameRoom() {
   const [blackTime, setBlackTime] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
   const [gameOverReason, setGameOverReason] = useState('');
+  
+  const [messages, setMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
 
   useEffect(() => {
     if (!socket || !user) return;
@@ -28,23 +31,28 @@ export default function GameRoom() {
       setGame(newGame);
       setWhiteTime(data.whiteTimeLeftMs);
       setBlackTime(data.blackTimeLeftMs);
-      // We would determine our color here from DB or emit if we tracked it in room
-      // For MVP, if it's vs AI, we are white. 
-      if (data.vsAI) setPlayerColor('w');
+      
+      if (data.whiteId === user.id) setPlayerColor('w');
+      else if (data.blackId === user.id) setPlayerColor('b');
+      else setPlayerColor('viewer');
     });
 
     socket.on('opponent_moved', (data) => {
-      const newGame = new Chess(game.fen());
-      newGame.move(data.move);
-      setGame(newGame);
+      setGame(prev => {
+        const newGame = new Chess(prev.fen());
+        newGame.move(data.move);
+        return newGame;
+      });
       setWhiteTime(data.whiteTimeLeftMs);
       setBlackTime(data.blackTimeLeftMs);
     });
 
     socket.on('ai_moved', (data) => {
-      const newGame = new Chess(game.fen());
-      newGame.move(data.move);
-      setGame(newGame);
+      setGame(prev => {
+        const newGame = new Chess(prev.fen());
+        newGame.move(data.move);
+        return newGame;
+      });
       setWhiteTime(data.whiteTimeLeftMs);
       setBlackTime(data.blackTimeLeftMs);
     });
@@ -58,6 +66,10 @@ export default function GameRoom() {
       setIsGameOver(true);
       setGameOverReason(`${data.status}: ${data.reason}`);
     });
+    
+    socket.on('receive_message', (msg) => {
+      setMessages(prev => [...prev, msg]);
+    });
 
     return () => {
       socket.off('game_state_sync');
@@ -65,8 +77,9 @@ export default function GameRoom() {
       socket.off('ai_moved');
       socket.off('move_confirmed');
       socket.off('game_over');
+      socket.off('receive_message');
     };
-  }, [socket, gameId, user, game]);
+  }, [socket, gameId, user]);
 
   // Very basic clock tick effect
   useEffect(() => {
@@ -119,6 +132,12 @@ export default function GameRoom() {
     return `${m}:${s}`;
   };
 
+  const handleSendMessage = () => {
+    if (!chatInput.trim()) return;
+    socket.emit('send_message', { gameId, text: chatInput.trim(), username: user?.username || 'Guest' });
+    setChatInput('');
+  };
+
   return (
     <div style={{ display: 'flex', gap: '2rem', maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
       {/* Board Area */}
@@ -168,14 +187,34 @@ export default function GameRoom() {
           </div>
         )}
 
-        <div className="glass-panel" style={{ flex: 1 }}>
+        <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <h3 style={{ marginBottom: '1rem' }}>Chat</h3>
-          <div style={{ height: '300px', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', padding: '1rem', marginBottom: '1rem' }}>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', fontStyle: 'italic' }}>Chat connected...</p>
+          <div style={{ flex: 1, minHeight: '300px', maxHeight: '400px', overflowY: 'auto', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', padding: '1rem', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {messages.length === 0 ? (
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', fontStyle: 'italic' }}>Chat connected...</p>
+            ) : (
+              messages.map((msg, idx) => (
+                <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <span style={{ fontSize: '0.75rem', color: msg.username === user?.username ? 'var(--accent-color)' : 'var(--text-secondary)', fontWeight: 'bold' }}>
+                    {msg.username}
+                  </span>
+                  <div style={{ background: msg.username === user?.username ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.3)', padding: '0.5rem', borderRadius: '4px', fontSize: '0.9rem' }}>
+                    {msg.text}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <input type="text" placeholder="Send a message..." style={{ flex: 1, padding: '0.5rem', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'white', borderRadius: '4px' }} />
-            <button className="btn" style={{ padding: '0.5rem 1rem' }}>Send</button>
+            <input 
+              type="text" 
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+              placeholder="Send a message..." 
+              style={{ flex: 1, padding: '0.5rem', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'white', borderRadius: '4px' }} 
+            />
+            <button onClick={handleSendMessage} className="btn" style={{ padding: '0.5rem 1rem' }}>Send</button>
           </div>
         </div>
 

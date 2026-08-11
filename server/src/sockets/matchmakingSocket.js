@@ -122,6 +122,15 @@ module.exports = (io, socket) => {
     }
   });
 
+  socket.on('start_ai_game', async ({ userId, difficulty, timeControlSec, incrementSec }) => {
+    try {
+      const game = await gameService.createAIGame(userId, difficulty, timeControlSec, incrementSec);
+      socket.emit('match_found', { gameId: game.id, color: 'white' });
+    } catch (err) {
+      socket.emit('error', { message: err.message });
+    }
+  });
+
   socket.on('get_seeks', () => {
     socket.emit('seeks_updated', matchmakingService.getOpenSeeks());
   });
