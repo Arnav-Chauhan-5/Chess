@@ -4,6 +4,7 @@ class AIService {
   constructor() {
     this.engine = null;
     this.isReady = false;
+    this.messageHandlers = new Set();
     this.initEngine();
   }
 
@@ -12,12 +13,26 @@ class AIService {
       const sf = await stockfish();
       this.engine = sf;
       
-      this.engine.onmessage = (msg) => {
-        // Internal handler if needed
+      // Intercept stockfish's output which defaults to console.log in Node.js
+      const origLog = console.log;
+      console.log = (...args) => {
+        const msg = args.join(' ');
+        
+        // Route potential stockfish messages to our handlers
+        if (typeof msg === 'string' && (msg.startsWith('bestmove') || msg.startsWith('info') || msg.startsWith('id') || msg.startsWith('option') || msg.startsWith('uci') || msg.startsWith('Stockfish'))) {
+          for (const handler of this.messageHandlers) {
+            handler(msg);
+          }
+          // Suppress raw stockfish chatter from the terminal
+          return;
+        }
+        
+        origLog(...args);
       };
       
-      if (typeof this.engine.postMessage === 'function') {
-        this.engine.postMessage('uci');
+      const send = this.engine.sendCommand || this.engine.postMessage;
+      if (typeof send === 'function') {
+        send.call(this.engine, 'uci');
       }
     } catch (e) {
       console.warn("Failed to initialize Stockfish:", e.message);
@@ -27,29 +42,25 @@ class AIService {
   async getBestMove(fen, difficulty = 5) {
     if (!this.engine) throw new Error('AI not ready');
     return new Promise((resolve, reject) => {
-      const depth = Math.max(1, Math.min(difficulty * 2, 20)); // Map difficulty 1-10 to depth 2-20
+      const depth = Math.max(1, Math.min(difficulty * 2, 20)); 
       
       const onMessage = (msg) => {
         if (typeof msg === 'string' && msg.startsWith('bestmove')) {
           const move = msg.split(' ')[1];
-          this.engine.removeListener('message', onMessage); // Cleanup
+          this.messageHandlers.delete(onMessage); // Cleanup
           resolve(move);
         }
       };
       
-      // We must hack around stockfish npm package event listener if it doesn't extend EventEmitter.
-      // Usually it's just `onmessage = fn`. To support concurrent requests, a queue is better, but MVP:
-      const originalOnMessage = this.engine.onmessage;
-      this.engine.onmessage = (msg) => {
-        if (originalOnMessage) originalOnMessage(msg);
-        onMessage(msg);
-      };
+      this.messageHandlers.add(onMessage);
 
-      this.engine.postMessage(`position fen ${fen}`);
-      this.engine.postMessage(`go depth ${depth}`);
+      const send = this.engine.sendCommand || this.engine.postMessage;
+      send.call(this.engine, `position fen ${fen}`);
+      send.call(this.engine, `go depth ${depth}`);
       
       // Timeout fallback
       setTimeout(() => {
+        this.messageHandlers.delete(onMessage);
         reject(new Error('AI timeout'));
       }, 5000);
     });

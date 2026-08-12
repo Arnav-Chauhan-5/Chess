@@ -57,10 +57,13 @@ model Game {
   whitePlayer     User?      @relation("GamesAsWhite", fields: [whiteId], references: [id])
   blackPlayer     User?      @relation("GamesAsBlack", fields: [blackId], references: [id])
   vsAI            Boolean    @default(false)
+  isCasual        Boolean    @default(true)
   aiDifficulty    Int?                            // Stockfish skill level, if vsAI
   pgn             String     @default("")
   status          GameStatus @default(IN_PROGRESS)
   endReason       EndReason?
+  whiteRatingDelta Int?
+  blackRatingDelta Int?
   timeControlSec  Int?                            // e.g. 300 for 5+0
   incrementSec    Int?       @default(0)
   whiteTimeLeftMs Int?

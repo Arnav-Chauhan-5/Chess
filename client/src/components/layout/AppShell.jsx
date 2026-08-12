@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../hooks/useSocket';
-import { Play, Trophy, History, User, Settings, LogOut, Menu, X, ChevronDown } from 'lucide-react';
+import { Play, Trophy, History, User, Settings, LogOut, Menu, X, ChevronDown, Eye } from 'lucide-react';
 
 export default function AppShell({ children }) {
   const { user, logout } = useAuth();
@@ -33,6 +33,7 @@ export default function AppShell({ children }) {
 
   const navItems = [
     { path: '/lobby', label: 'Play', icon: Play },
+    { path: '/watch', label: 'Watch', icon: Eye },
     { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
     { path: '/history', label: 'Game History', icon: History },
     { path: '/profile', label: 'Profile', icon: User },
@@ -189,7 +190,7 @@ export default function AppShell({ children }) {
         </header>
 
         {/* Page Content */}
-        <main style={{ flex: 1, overflowY: 'auto' }}>
+        <main style={{ flex: 1 }}>
           <Outlet />
         </main>
       </div>

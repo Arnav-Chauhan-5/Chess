@@ -1,5 +1,8 @@
 const matchmakingService = require('../services/matchmakingService');
 const gameService = require('../services/gameService');
+const gameState = require('../game-state/gameState');
+const aiService = require('../services/aiService');
+const prisma = require('../db');
 
 module.exports = (io, socket) => {
   
@@ -27,10 +30,15 @@ module.exports = (io, socket) => {
         io.to(p2.socketId).emit('match_found', { gameId: game.id, color: isP1White ? 'black' : 'white' });
         
         io.emit('seeks_updated', matchmakingService.getOpenSeeks());
+        io.emit('live_games_updated', gameService.getLiveGames());
       }
     } catch (err) {
       socket.emit('error', { message: err.message });
     }
+  });
+
+  socket.on('get_live_games', () => {
+    socket.emit('live_games_updated', gameService.getLiveGames());
   });
 
   socket.on('leave_queue', () => {
@@ -84,6 +92,7 @@ module.exports = (io, socket) => {
       io.to(p2.socketId).emit('match_found', { gameId: game.id, color: isP1White ? 'black' : 'white' });
       
       io.emit('seeks_updated', matchmakingService.getOpenSeeks());
+      io.emit('live_games_updated', gameService.getLiveGames());
     } catch (err) {
       socket.emit('error', { message: err.message });
     }
@@ -117,15 +126,51 @@ module.exports = (io, socket) => {
 
       matchmakingService.deleteLobby(roomId);
       io.emit('seeks_updated', matchmakingService.getOpenSeeks());
+      io.emit('live_games_updated', gameService.getLiveGames());
     } catch (err) {
       socket.emit('error', { message: err.message });
     }
   });
 
-  socket.on('start_ai_game', async ({ userId, difficulty, timeControlSec, incrementSec }) => {
+  socket.on('start_ai_game', async ({ userId, difficulty, timeControlSec, incrementSec, preferredColor }) => {
     try {
-      const game = await gameService.createAIGame(userId, difficulty, timeControlSec, incrementSec);
-      socket.emit('match_found', { gameId: game.id, color: 'white' });
+      const { game, humanColor } = await gameService.createAIGame(userId, difficulty, timeControlSec, incrementSec, preferredColor || 'random');
+      socket.emit('match_found', { gameId: game.id, color: humanColor });
+
+      // If human is black, AI (white) moves first — trigger opening move immediately
+      if (humanColor === 'black') {
+        // Small delay so the client has time to join the game room
+        setTimeout(async () => {
+          try {
+            const aiGame = gameState.getGame(game.id);
+            if (!aiGame) return;
+
+            const bestMove = await aiService.getBestMove(aiGame.chess.fen(), aiGame.aiDifficulty);
+            const aiMoveResult = aiGame.chess.move(bestMove);
+            
+            aiGame.lastMoveTime = Date.now();
+
+            io.to(`game_${game.id}`).emit('ai_moved', {
+              move: aiMoveResult,
+              whiteTimeLeftMs: aiGame.whiteTimeLeftMs,
+              blackTimeLeftMs: aiGame.blackTimeLeftMs
+            });
+
+            // Persist the AI's opening move
+            await prisma.move.create({
+              data: {
+                gameId: game.id,
+                moveNumber: aiGame.chess.history().length,
+                san: aiMoveResult.san,
+                fenAfter: aiGame.chess.fen(),
+                playerColor: 'white'
+              }
+            });
+          } catch (e) {
+            console.error('AI opening move error:', e);
+          }
+        }, 1500);
+      }
     } catch (err) {
       socket.emit('error', { message: err.message });
     }

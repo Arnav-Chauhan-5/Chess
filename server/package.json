@@ -33,6 +33,7 @@
     "passport-microsoft": "^2.1.0",
     "pg": "^8.23.0",
     "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
     "stockfish": "^18.0.8",
     "uuid": "^14.0.1",
     "zod": "^4.4.3"

@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useSocket } from '../hooks/useSocket';
 import { useAuth } from '../context/AuthContext';
-import { Play, Users, Zap, Flame, Snail, Timer, Hash, Bot } from 'lucide-react';
+import DecorativeBoard from '../components/DecorativeBoard';
+import { Play, Users, Zap, Flame, Snail, Timer, Hash, Bot, Eye } from 'lucide-react';
 
 const PRESETS = [
   { label: '1+0', icon: Zap },
@@ -25,8 +26,11 @@ export default function Lobby() {
   const { user } = useAuth();
   const navigate = useNavigate();
   
+  const [activeTab, setActiveTab] = useState('ai');
   const [queueStatus, setQueueStatus] = useState('idle');
   const [selectedPreset, setSelectedPreset] = useState(null);
+  const [expandedBot, setExpandedBot] = useState(null);
+  const [aiTimePreset, setAiTimePreset] = useState('10+0');
   
   const [customMins, setCustomMins] = useState(10);
   const [customInc, setCustomInc] = useState(0);
@@ -34,21 +38,24 @@ export default function Lobby() {
   const [hostedRoom, setHostedRoom] = useState(null);
 
   const [openSeeks, setOpenSeeks] = useState([]);
-  const [recentGames, setRecentGames] = useState([]);
-  const [loadingGames, setLoadingGames] = useState(false);
+  const [liveGames, setLiveGames] = useState([]);
 
   useEffect(() => {
     if (!socket) return;
 
-    socket.emit('get_seeks'); // Fetch initial seeks
+    socket.emit('get_seeks');
+    socket.emit('get_live_games');
 
     socket.on('queue_status', (data) => {
       setQueueStatus(data.status);
     });
 
     socket.on('seeks_updated', (seeks) => {
-      // Filter out our own seeks from the list to avoid playing ourselves
       setOpenSeeks(seeks.filter(s => s.userId !== user?.id));
+    });
+
+    socket.on('live_games_updated', (games) => {
+      setLiveGames(games);
     });
 
     socket.on('match_found', (data) => {
@@ -76,6 +83,7 @@ export default function Lobby() {
     return () => {
       socket.off('queue_status');
       socket.off('seeks_updated');
+      socket.off('live_games_updated');
       socket.off('match_found');
       socket.off('room_created');
       socket.off('room_joined');
@@ -83,25 +91,6 @@ export default function Lobby() {
       socket.off('error');
     };
   }, [socket, navigate, hostedRoom, user]);
-
-  useEffect(() => {
-    if (!user) return;
-    const fetchRecentGames = async () => {
-      try {
-        setLoadingGames(true);
-        const res = await fetch(`http://localhost:3000/games/recent?userId=${user.id}`);
-        const data = await res.json();
-        if (res.ok) {
-          setRecentGames(data.games || []);
-        }
-      } catch (err) {
-        console.error("Failed to fetch recent games", err);
-      } finally {
-        setLoadingGames(false);
-      }
-    };
-    fetchRecentGames();
-  }, [user]);
 
   const handleJoinQueue = (preset) => {
     if (!user) return alert('Please login first');
@@ -150,277 +139,359 @@ export default function Lobby() {
     }
   };
 
-  const handleStartAIGame = (bot) => {
+  const handleStartAIGame = (bot, preferredColor) => {
     if (!user) return alert('Please login first');
+    const [minStr, incStr] = aiTimePreset.split('+');
+    const timeControlSec = parseInt(minStr) * 60;
+    const incrementSec = parseInt(incStr);
     socket.emit('start_ai_game', { 
       userId: user.id, 
       difficulty: bot.difficulty,
-      timeControlSec: 600, // Default 10 mins
-      incrementSec: 0
+      timeControlSec,
+      incrementSec,
+      preferredColor
     });
+    setExpandedBot(null);
   };
 
+  const tabStyle = (isActive) => ({
+    flex: 1,
+    padding: '0.85rem 1.5rem',
+    background: isActive ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
+    border: 'none',
+    borderBottom: isActive ? '2px solid var(--accent-color)' : '2px solid transparent',
+    color: isActive ? 'var(--accent-color)' : 'var(--text-secondary)',
+    cursor: 'pointer',
+    fontWeight: isActive ? '700' : '500',
+    fontSize: '1rem',
+    fontFamily: 'inherit',
+    transition: 'all 0.2s',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5rem'
+  });
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '2rem', padding: '2rem', maxWidth: '1400px', margin: '0 auto' }} className="lobby-grid">
+    <div style={{ display: 'flex', gap: '3rem', padding: '2rem', maxWidth: '1200px', margin: '0 auto', alignItems: 'flex-start' }} className="lobby-grid">
       
-      {/* LEFT COLUMN: Pairing & Seeks */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      {/* LEFT COLUMN: Decorative Board */}
+      <div style={{ flex: '0 0 auto', position: 'sticky', top: '90px' }} className="lobby-board">
+        <DecorativeBoard autoplay={false} />
         
-        {/* Quick Pairing */}
-        <div className="glass-panel animate-fade-in" style={{ padding: '2rem' }}>
-          <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', fontSize: '1.25rem' }}>
-            <Play size={20} color="var(--accent-color)" /> Quick Pairing
-          </h2>
-          
-          {queueStatus === 'searching' ? (
-            <div style={{ textAlign: 'center', padding: '3rem 1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
-              <div style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Searching for opponent...</div>
-              <p style={{ color: 'var(--accent-color)', marginBottom: '2rem', fontSize: '1.25rem', fontWeight: 'bold' }}>{selectedPreset}</p>
-              <button onClick={handleCancelQueue} className="btn" style={{ background: 'var(--danger)', padding: '0.75rem 2rem' }}>
-                Cancel Search
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem' }}>
-              {PRESETS.map((preset, i) => (
-                <button 
-                  key={preset.label}
-                  onClick={() => handleJoinQueue(preset)}
-                  className="preset-btn" 
-                  style={{ 
-                    background: 'rgba(255,255,255,0.03)', 
-                    border: '1px solid rgba(255,255,255,0.1)', 
-                    color: 'var(--text-primary)', 
+        {/* Live Games below the board */}
+        {liveGames.length > 0 && (
+          <div className="glass-panel animate-fade-in" style={{ padding: '1.25rem', marginTop: '1.5rem' }}>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', fontSize: '1rem' }}>
+              <Eye size={16} color="var(--accent-color)" /> Live Games
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {liveGames.map((game, i) => (
+                <Link
+                  key={i}
+                  to={`/game/${game.gameId}`}
+                  style={{
                     display: 'flex',
-                    flexDirection: 'column',
+                    justifyContent: 'space-between',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '1.5rem 1rem',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
+                    padding: '0.6rem 0.75rem',
+                    background: 'rgba(255,255,255,0.03)',
+                    borderRadius: '6px',
+                    textDecoration: 'none',
+                    color: 'var(--text-primary)',
+                    border: '1px solid rgba(255,255,255,0.05)',
                     transition: 'all 0.2s',
-                    animation: `fadeIn 0.3s ease forwards ${i * 0.05}s`
+                    fontSize: '0.85rem'
                   }}
+                  className="seek-row"
                 >
-                  <preset.icon size={28} style={{ marginBottom: '0.75rem', color: 'var(--text-secondary)' }} className="preset-icon" />
-                  <span style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{preset.label}</span>
-                </button>
+                  <span><strong>{game.whiteUsername}</strong> vs <strong>{game.blackUsername}</strong></span>
+                  <span style={{ color: 'var(--accent-color)', fontWeight: 'bold', fontSize: '0.8rem' }}>Watch</span>
+                </Link>
               ))}
             </div>
-          )}
-        </div>
-
-        {/* Open Seeks */}
-        <div className="glass-panel animate-fade-in" style={{ padding: '2rem', flex: 1, animationDelay: '0.1s' }}>
-          <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', fontSize: '1.25rem' }}>
-            <Users size={20} color="var(--accent-color)" /> Open Challenges
-          </h2>
-          
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
-                  <th style={{ padding: '1rem 0.5rem', fontWeight: 'normal' }}>Player</th>
-                  <th style={{ padding: '1rem 0.5rem', fontWeight: 'normal' }}>Rating</th>
-                  <th style={{ padding: '1rem 0.5rem', fontWeight: 'normal' }}>Time</th>
-                  <th style={{ padding: '1rem 0.5rem', fontWeight: 'normal' }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {openSeeks.length === 0 ? (
-                  <tr>
-                    <td colSpan="4" style={{ padding: '2rem 0', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                      No open challenges right now. Join the queue!
-                    </td>
-                  </tr>
-                ) : (
-                  openSeeks.map((seek, i) => (
-                    <tr key={i} className="seek-row" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s' }}>
-                      <td style={{ padding: '1rem 0.5rem', fontWeight: 'bold' }}>{seek.username}</td>
-                      <td style={{ padding: '1rem 0.5rem', color: 'var(--text-secondary)' }}>{seek.rating}</td>
-                      <td style={{ padding: '1rem 0.5rem' }}>
-                        {seek.type === 'queue' ? seek.preset : `${seek.timeControlSec/60}+${seek.incrementSec}`}
-                      </td>
-                      <td style={{ padding: '1rem 0.5rem', textAlign: 'right' }}>
-                        <button 
-                          onClick={() => handleAcceptSeek(seek)}
-                          style={{ background: 'var(--accent-color)', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
-                        >
-                          Play
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* MIDDLE COLUMN: Play vs AI */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-        <div className="glass-panel animate-fade-in" style={{ padding: '2rem', flex: 1, animationDelay: '0.15s' }}>
-          <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', fontSize: '1.25rem' }}>
-            <Bot size={20} color="var(--accent-color)" /> Play vs AI
-          </h2>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {AI_BOTS.map((bot, i) => (
-              <button 
-                key={bot.label}
-                onClick={() => handleStartAIGame(bot)}
-                className="ai-bot-btn"
-                style={{ 
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  background: 'rgba(255,255,255,0.03)', 
-                  border: '1px solid rgba(255,255,255,0.1)', 
-                  padding: '1rem 1.25rem',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  animation: `fadeIn 0.3s ease forwards ${i * 0.1}s`,
-                  textAlign: 'left'
-                }}
-              >
-                <div>
-                  <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
-                    {bot.label} <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 'normal' }}>({bot.rating})</span>
-                  </div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                    Style: {bot.style}
-                  </div>
-                </div>
-                <div style={{ background: 'var(--accent-color)', color: 'white', padding: '0.4rem 1rem', borderRadius: '4px', fontSize: '0.9rem', fontWeight: 'bold' }}>
-                  Play
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* RIGHT COLUMN: Play a Friend & Recent Games */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      {/* RIGHT COLUMN: Tabbed Panel */}
+      <div style={{ flex: 1, minWidth: 0 }}>
         
-        {/* Custom Lobby */}
-        <div className="glass-panel animate-fade-in" style={{ padding: '1.5rem', animationDelay: '0.2s' }}>
-          <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', fontSize: '1.1rem' }}>
-            <Hash size={18} color="var(--accent-color)" /> Play a Friend
-          </h2>
+        {/* Tab Buttons */}
+        <div className="glass-panel" style={{ padding: 0, overflow: 'hidden', marginBottom: '0' }}>
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)' }}>
+            <button style={tabStyle(activeTab === 'ai')} onClick={() => setActiveTab('ai')}>
+              <Bot size={18} /> vs AI
+            </button>
+            <button style={tabStyle(activeTab === 'player')} onClick={() => setActiveTab('player')}>
+              <Users size={18} /> vs Player
+            </button>
+          </div>
 
-          {hostedRoom ? (
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Room Created</h3>
-              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '0.75rem', borderRadius: '4px', textAlign: 'center', marginBottom: '1rem', fontFamily: 'monospace', fontSize: '1.25rem', letterSpacing: '2px', color: 'var(--accent-color)' }}>
-                {hostedRoom.roomId}
+          <div style={{ padding: '1.5rem' }}>
+            
+            {/* TAB 1: vs AI */}
+            {activeTab === 'ai' && (
+              <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {AI_BOTS.map((bot, i) => {
+                  const isExpanded = expandedBot === bot.label;
+                  return (
+                    <div key={bot.label} style={{ animation: `fadeIn 0.3s ease forwards ${i * 0.06}s` }}>
+                      <button 
+                        onClick={() => setExpandedBot(isExpanded ? null : bot.label)}
+                        className="ai-bot-btn"
+                        style={{ 
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          background: isExpanded ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)', 
+                          border: `1px solid ${isExpanded ? 'var(--accent-color)' : 'rgba(255,255,255,0.1)'}`, 
+                          padding: '1rem 1.25rem',
+                          borderRadius: isExpanded ? '8px 8px 0 0' : '8px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          textAlign: 'left',
+                          width: '100%'
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 'bold', fontSize: '1.05rem', color: 'var(--text-primary)', marginBottom: '0.2rem' }}>
+                            {bot.label} <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 'normal' }}>({bot.rating})</span>
+                          </div>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                            Style: {bot.style}
+                          </div>
+                        </div>
+                        <div style={{ background: 'var(--accent-color)', color: 'white', padding: '0.4rem 1rem', borderRadius: '4px', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                          {isExpanded ? '▾' : 'Play'}
+                        </div>
+                      </button>
+                      
+                      {isExpanded && (
+                        <div style={{ 
+                          background: 'rgba(255,255,255,0.04)', 
+                          border: '1px solid var(--accent-color)', 
+                          borderTop: 'none',
+                          borderRadius: '0 0 8px 8px', 
+                          padding: '1rem 1.25rem',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.75rem'
+                        }}>
+                          {/* Time control */}
+                          <div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Time Control</div>
+                            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                              {PRESETS.map(p => (
+                                <button 
+                                  key={p.label}
+                                  onClick={() => setAiTimePreset(p.label)}
+                                  style={{ 
+                                    padding: '0.35rem 0.65rem', 
+                                    borderRadius: '4px', 
+                                    border: '1px solid', 
+                                    borderColor: aiTimePreset === p.label ? 'var(--accent-color)' : 'rgba(255,255,255,0.15)',
+                                    background: aiTimePreset === p.label ? 'var(--accent-color)' : 'transparent',
+                                    color: 'white', 
+                                    cursor: 'pointer', 
+                                    fontSize: '0.85rem',
+                                    fontWeight: aiTimePreset === p.label ? 'bold' : 'normal',
+                                    transition: 'all 0.15s'
+                                  }}
+                                >{p.label}</button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Color choice */}
+                          <div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Play As</div>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                              <button 
+                                onClick={() => handleStartAIGame(bot, 'white')}
+                                className="ai-color-btn"
+                                style={{ flex: 1, padding: '0.6rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.1)', color: 'white', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem', transition: 'all 0.15s' }}
+                              >♔ White</button>
+                              <button 
+                                onClick={() => handleStartAIGame(bot, 'random')}
+                                className="ai-color-btn"
+                                style={{ flex: 1, padding: '0.6rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem', transition: 'all 0.15s' }}
+                              >⚄ Random</button>
+                              <button 
+                                onClick={() => handleStartAIGame(bot, 'black')}
+                                className="ai-color-btn"
+                                style={{ flex: 1, padding: '0.6rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(0,0,0,0.3)', color: 'white', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem', transition: 'all 0.15s' }}
+                              >♚ Black</button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', textAlign: 'center', marginBottom: '1rem' }}>
-                {hostedRoom.guestId ? 'Opponent has joined!' : 'Waiting for opponent...'}
-              </p>
-              <button 
-                onClick={handleStartRoomGame} 
-                className="btn" 
-                disabled={!hostedRoom.guestId}
-                style={{ width: '100%', padding: '0.75rem' }}
-              >
-                Start Game
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              <div>
-                <h3 style={{ marginBottom: '0.75rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Create Room</h3>
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Mins</label>
-                    <input type="number" value={customMins} onChange={e => setCustomMins(e.target.value)} style={{ width: '100%', padding: '0.5rem', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', color: 'white', borderRadius: '4px' }} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Inc</label>
-                    <input type="number" value={customInc} onChange={e => setCustomInc(e.target.value)} style={{ width: '100%', padding: '0.5rem', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', color: 'white', borderRadius: '4px' }} />
-                  </div>
-                </div>
-                <button onClick={handleCreateRoom} className="btn" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', padding: '0.75rem', fontSize: '0.9rem' }}>Create Room</button>
-              </div>
+            )}
 
-              <div style={{ height: '1px', background: 'var(--border-color)' }}></div>
-
-              <div>
-                <h3 style={{ marginBottom: '0.75rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Join with Code</h3>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <input 
-                    type="text" 
-                    placeholder="Room ID" 
-                    value={roomId} 
-                    onChange={e => setRoomId(e.target.value)}
-                    style={{ flex: 1, padding: '0.5rem', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', color: 'white', borderRadius: '4px' }}
-                  />
-                  <button onClick={handleJoinRoom} className="btn" style={{ padding: '0.5rem 1rem' }}>Join</button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Recent Games */}
-        <div className="glass-panel animate-fade-in" style={{ padding: '1.5rem', flex: 1, animationDelay: '0.3s' }}>
-          <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', fontSize: '1.1rem' }}>
-            <Timer size={18} color="var(--accent-color)" /> Recent Games
-          </h2>
-          
-          {loadingGames ? (
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Loading...</p>
-          ) : recentGames.length === 0 ? (
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>No recent games found.</p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {recentGames.map(game => {
-                const isWhite = game.whiteId === user?.id;
-                const opponent = isWhite ? (game.blackPlayer?.username || 'AI') : (game.whitePlayer?.username || 'AI');
+            {/* TAB 2: vs Player */}
+            {activeTab === 'player' && (
+              <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 
-                // Determine result text
-                let resultClass = 'text-secondary';
-                let resultText = 'Draw';
-                if (game.status === 'WHITE_WON') {
-                  resultClass = isWhite ? 'text-success' : 'text-danger';
-                  resultText = isWhite ? 'Won' : 'Lost';
-                } else if (game.status === 'BLACK_WON') {
-                  resultClass = !isWhite ? 'text-success' : 'text-danger';
-                  resultText = !isWhite ? 'Won' : 'Lost';
-                }
+                {/* Quick Pairing */}
+                <div>
+                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', fontSize: '1.05rem' }}>
+                    <Play size={18} color="var(--accent-color)" /> Quick Pairing
+                  </h3>
+                  
+                  {queueStatus === 'searching' ? (
+                    <div style={{ textAlign: 'center', padding: '2rem 1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>Searching for opponent...</div>
+                      <p style={{ color: 'var(--accent-color)', marginBottom: '1.5rem', fontSize: '1.15rem', fontWeight: 'bold' }}>{selectedPreset}</p>
+                      <button onClick={handleCancelQueue} className="btn" style={{ background: 'var(--danger)', padding: '0.6rem 1.5rem' }}>
+                        Cancel Search
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '0.75rem' }}>
+                      {PRESETS.map((preset, i) => (
+                        <button 
+                          key={preset.label}
+                          onClick={() => handleJoinQueue(preset)}
+                          className="preset-btn" 
+                          style={{ 
+                            background: 'rgba(255,255,255,0.03)', 
+                            border: '1px solid rgba(255,255,255,0.1)', 
+                            color: 'var(--text-primary)', 
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: '1.25rem 0.75rem',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            animation: `fadeIn 0.3s ease forwards ${i * 0.05}s`
+                          }}
+                        >
+                          <preset.icon size={24} style={{ marginBottom: '0.5rem', color: 'var(--text-secondary)' }} className="preset-icon" />
+                          <span style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{preset.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-                return (
-                  <Link 
-                    to={`/game/${game.id}`} 
-                    key={game.id}
-                    className="recent-game-card"
-                    style={{ 
-                      display: 'block',
-                      padding: '0.75rem', 
-                      background: 'rgba(255,255,255,0.02)', 
-                      borderRadius: '6px', 
-                      textDecoration: 'none',
-                      color: 'var(--text-primary)',
-                      border: '1px solid rgba(255,255,255,0.05)',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                      <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>vs {opponent}</span>
-                      <span className={resultClass} style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>{resultText}</span>
+                {/* Divider */}
+                <div style={{ height: '1px', background: 'var(--border-color)' }} />
+
+                {/* Play a Friend */}
+                <div>
+                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', fontSize: '1.05rem' }}>
+                    <Hash size={18} color="var(--accent-color)" /> Play a Friend
+                  </h3>
+
+                  {hostedRoom ? (
+                    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <h4 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Room Created</h4>
+                      <div style={{ background: 'rgba(0,0,0,0.3)', padding: '0.75rem', borderRadius: '4px', textAlign: 'center', marginBottom: '1rem', fontFamily: 'monospace', fontSize: '1.25rem', letterSpacing: '2px', color: 'var(--accent-color)' }}>
+                        {hostedRoom.roomId}
+                      </div>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', textAlign: 'center', marginBottom: '1rem' }}>
+                        {hostedRoom.guestId ? 'Opponent has joined!' : 'Waiting for opponent...'}
+                      </p>
+                      <button 
+                        onClick={handleStartRoomGame} 
+                        className="btn" 
+                        disabled={!hostedRoom.guestId}
+                        style={{ width: '100%', padding: '0.75rem' }}
+                      >
+                        Start Game
+                      </button>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
-                      <span>{game.timeControlSec/60}+{game.incrementSec}</span>
-                      <span>{new Date(game.createdAt).toLocaleDateString()}</span>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      {/* Create Room */}
+                      <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                        <h4 style={{ marginBottom: '0.75rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Create Room</h4>
+                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                          <div style={{ flex: 1 }}>
+                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Mins</label>
+                            <input type="number" value={customMins} onChange={e => setCustomMins(e.target.value)} style={{ width: '100%', padding: '0.5rem', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', color: 'white', borderRadius: '4px' }} />
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Inc</label>
+                            <input type="number" value={customInc} onChange={e => setCustomInc(e.target.value)} style={{ width: '100%', padding: '0.5rem', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', color: 'white', borderRadius: '4px' }} />
+                          </div>
+                        </div>
+                        <button onClick={handleCreateRoom} className="btn" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', padding: '0.6rem', fontSize: '0.85rem' }}>Create</button>
+                      </div>
+
+                      {/* Join with Code */}
+                      <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                        <h4 style={{ marginBottom: '0.75rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Join with Code</h4>
+                        <input 
+                          type="text" 
+                          placeholder="Room ID" 
+                          value={roomId} 
+                          onChange={e => setRoomId(e.target.value)}
+                          style={{ width: '100%', padding: '0.5rem', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', color: 'white', borderRadius: '4px', marginBottom: '0.75rem' }}
+                        />
+                        <button onClick={handleJoinRoom} className="btn" style={{ width: '100%', padding: '0.6rem', fontSize: '0.85rem' }}>Join Room</button>
+                      </div>
                     </div>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
+                  )}
+                </div>
+
+                {/* Divider */}
+                <div style={{ height: '1px', background: 'var(--border-color)' }} />
+
+                {/* Open Challenges */}
+                <div>
+                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', fontSize: '1.05rem' }}>
+                    <Users size={18} color="var(--accent-color)" /> Open Challenges
+                  </h3>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
+                          <th style={{ padding: '0.75rem 0.5rem', fontWeight: 'normal', fontSize: '0.85rem' }}>Player</th>
+                          <th style={{ padding: '0.75rem 0.5rem', fontWeight: 'normal', fontSize: '0.85rem' }}>Rating</th>
+                          <th style={{ padding: '0.75rem 0.5rem', fontWeight: 'normal', fontSize: '0.85rem' }}>Time</th>
+                          <th style={{ padding: '0.75rem 0.5rem', fontWeight: 'normal', fontSize: '0.85rem' }}></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {openSeeks.length === 0 ? (
+                          <tr>
+                            <td colSpan="4" style={{ padding: '1.5rem 0', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                              No open challenges right now. Join the queue!
+                            </td>
+                          </tr>
+                        ) : (
+                          openSeeks.map((seek, i) => (
+                            <tr key={i} className="seek-row" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s' }}>
+                              <td style={{ padding: '0.75rem 0.5rem', fontWeight: 'bold' }}>{seek.username}</td>
+                              <td style={{ padding: '0.75rem 0.5rem', color: 'var(--text-secondary)' }}>{seek.rating}</td>
+                              <td style={{ padding: '0.75rem 0.5rem' }}>
+                                {seek.type === 'queue' ? seek.preset : `${seek.timeControlSec/60}+${seek.incrementSec}`}
+                              </td>
+                              <td style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>
+                                <button 
+                                  onClick={() => handleAcceptSeek(seek)}
+                                  style={{ background: 'var(--accent-color)', color: 'white', border: 'none', padding: '0.4rem 0.85rem', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}
+                                >
+                                  Play
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -438,25 +509,24 @@ export default function Lobby() {
           transform: translateY(-2px);
           border-color: var(--accent-color) !important;
         }
+        .ai-color-btn:hover {
+          background: var(--accent-color) !important;
+          color: white !important;
+          border-color: var(--accent-color) !important;
+          transform: translateY(-1px);
+        }
         .seek-row:hover {
           background: rgba(255,255,255,0.03) !important;
         }
-        .recent-game-card:hover {
-          background: rgba(255,255,255,0.05) !important;
-          border-color: rgba(255,255,255,0.15) !important;
-        }
-        .text-success { color: #10b981; }
-        .text-danger { color: #ef4444; }
-        .text-secondary { color: var(--text-secondary); }
         
-        @media (max-width: 1100px) {
+        @media (max-width: 900px) {
           .lobby-grid {
-            grid-template-columns: 1fr 1fr !important;
+            flex-direction: column !important;
           }
-        }
-        @media (max-width: 768px) {
-          .lobby-grid {
-            grid-template-columns: 1fr !important;
+          .lobby-board {
+            position: static !important;
+            display: flex;
+            justify-content: center;
           }
         }
       `}</style>
