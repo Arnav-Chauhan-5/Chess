@@ -27,16 +27,43 @@ enum EndReason {
 }
 
 model User {
-  id            String         @id @default(uuid())
-  username      String         @unique
-  email         String         @unique
-  passwordHash  String?                       // null for OAuth-only users
-  avatarUrl     String?
-  rating        Int            @default(1200)
-  createdAt     DateTime       @default(now())
-  oauthAccounts OAuthAccount[]
-  gamesAsWhite  Game[]         @relation("GamesAsWhite")
-  gamesAsBlack  Game[]         @relation("GamesAsBlack")
+  id              String         @id @default(uuid())
+  username        String         @unique
+  email           String         @unique
+  passwordHash    String?                       // null for OAuth-only users
+  avatarUrl       String?
+  rating          Int            @default(1200)
+  showOnlineStatus Boolean       @default(true)
+  createdAt       DateTime       @default(now())
+  oauthAccounts   OAuthAccount[]
+  gamesAsWhite    Game[]         @relation("GamesAsWhite")
+  gamesAsBlack    Game[]         @relation("GamesAsBlack")
+  friendsSent     Friendship[]   @relation("FriendRequester")
+  friendsReceived Friendship[]   @relation("FriendAddressee")
+  notifications   Notification[]
+}
+
+model Friendship {
+  id          String   @id @default(uuid())
+  requesterId String
+  addresseeId String
+  requester   User     @relation("FriendRequester", fields: [requesterId], references: [id])
+  addressee   User     @relation("FriendAddressee", fields: [addresseeId], references: [id])
+  status      String   @default("PENDING") // PENDING, ACCEPTED
+  createdAt   DateTime @default(now())
+
+  @@unique([requesterId, addresseeId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // FRIEND_REQUEST | CHALLENGE | GAME_INVITE | DRAW_OFFER
+  message   String
+  data      Json?    // e.g. { fromUserId, fromUsername, gameId, friendshipId }
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
 
 model OAuthAccount {

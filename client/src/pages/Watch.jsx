@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSocket } from '../hooks/useSocket';
 import { Eye, Clock } from 'lucide-react';
+import { getTimeCategory } from '../utils/timeControl';
 
 export default function Watch() {
   const { socket } = useSocket();
@@ -63,9 +64,14 @@ export default function Watch() {
                       {game.blackUsername} <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 'normal' }}>({game.blackRating})</span>
                     </td>
                     <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <Clock size={14} />
-                        {game.timeControlSec / 60}+{game.incrementSec}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <Clock size={14} />
+                          <span>{game.timeControlSec / 60}+{game.incrementSec}</span>
+                        </div>
+                        <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', color: 'var(--text-secondary)' }}>
+                          {getTimeCategory(game.timeControlSec / 60)}
+                        </span>
                       </div>
                     </td>
                     <td style={{ padding: '1rem', textAlign: 'right' }}>

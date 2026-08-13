@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { History as HistoryIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
+import { getTimeCategory } from '../utils/timeControl';
 
 export default function History() {
   const { user } = useAuth();
@@ -69,7 +70,14 @@ export default function History() {
                         {resultText}
                       </span>
                     </td>
-                    <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{game.timeControlSec/60}+{game.incrementSec}</td>
+                    <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span>{game.timeControlSec/60}+{game.incrementSec}</span>
+                        <span style={{ fontSize: '0.75rem', padding: '0.15rem 0.4rem', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', color: 'var(--text-secondary)' }}>
+                          {getTimeCategory(game.timeControlSec/60)}
+                        </span>
+                      </div>
+                    </td>
                     <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{new Date(game.createdAt).toLocaleDateString()}</td>
                     <td style={{ padding: '1rem', textAlign: 'right' }}>
                       <Link to={`/game/${game.id}`} className="btn" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}>Review</Link>

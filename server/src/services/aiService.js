@@ -42,6 +42,9 @@ class AIService {
   async getBestMove(fen, difficulty = 5) {
     if (!this.engine) throw new Error('AI not ready');
     return new Promise((resolve, reject) => {
+      // difficulty comes in as 1 to 10. Map it to Skill Level 0 to 20
+      const skillLevel = Math.round((difficulty - 1) * (20 / 9));
+      // Also scale depth so lower difficulties don't think too deeply
       const depth = Math.max(1, Math.min(difficulty * 2, 20)); 
       
       const onMessage = (msg) => {
@@ -55,6 +58,8 @@ class AIService {
       this.messageHandlers.add(onMessage);
 
       const send = this.engine.sendCommand || this.engine.postMessage;
+      // Set the skill level option
+      send.call(this.engine, `setoption name Skill Level value ${skillLevel}`);
       send.call(this.engine, `position fen ${fen}`);
       send.call(this.engine, `go depth ${depth}`);
       

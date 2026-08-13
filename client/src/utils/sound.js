@@ -31,7 +31,18 @@ const playOscillator = (freq, type, duration, vol) => {
 };
 
 export const playSound = (type) => {
-  const enabled = localStorage.getItem('chess_sounds_enabled') !== 'false';
+  let enabled = true;
+  try {
+    const stored = localStorage.getItem('chess_settings');
+    if (stored) {
+      enabled = JSON.parse(stored).soundsEnabled ?? true;
+    } else {
+      const oldSounds = localStorage.getItem('chess_sounds_enabled');
+      if (oldSounds !== null) {
+        enabled = oldSounds === 'true';
+      }
+    }
+  } catch(e) {}
   if (!enabled) return;
   
   try {

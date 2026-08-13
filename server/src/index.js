@@ -7,6 +7,9 @@ const helmet = require('helmet');
 const passport = require('./auth/passport');
 const registerMatchmakingHandlers = require('./sockets/matchmakingSocket');
 const registerGameHandlers = require('./sockets/gameSocket');
+const registerFriendHandlers = require('./sockets/friendSocket');
+const socketStore = require('./sockets/socketStore');
+const friendService = require('./services/friendService');
 
 const app = express();
 const server = http.createServer(app);
@@ -31,21 +34,36 @@ const io = new Server(server, {
 app.use('/auth', require('./routes/auth.routes'));
 app.use('/games', require('./routes/game.routes'));
 app.use('/users', require('./routes/user.routes'));
+app.use('/friends', require('./routes/friend.routes'));
+app.use('/notifications', require('./routes/notification.routes'));
 
 const connectedSockets = new Set();
+socketStore.setIo(io);
 
 io.on('connection', (socket) => {
   console.log(`Socket connected: ${socket.id}`);
   connectedSockets.add(socket.id);
   io.emit('online_count', connectedSockets.size);
   
+  socket.on('register_user', async ({ userId }) => {
+    socketStore.registerUser(socket.id, userId);
+    // Broadcast status to friends
+    await friendService.broadcastStatusToFriends(io, userId, true);
+  });
+
   registerMatchmakingHandlers(io, socket);
   registerGameHandlers(io, socket);
+  registerFriendHandlers(io, socket);
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     console.log(`Socket disconnected: ${socket.id}`);
     connectedSockets.delete(socket.id);
     io.emit('online_count', connectedSockets.size);
+
+    const userId = socketStore.removeSocket(socket.id);
+    if (userId && !socketStore.isOnline(userId)) {
+      await friendService.broadcastStatusToFriends(io, userId, false);
+    }
   });
 });
 

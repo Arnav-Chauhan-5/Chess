@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../hooks/useSocket';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import { Chess } from 'chess.js';
 import { Chessboard } from 'react-chessboard';
 import { playSound } from '../utils/sound';
@@ -22,6 +23,7 @@ export default function GameRoom() {
   const { gameId } = useParams();
   const { socket } = useSocket();
   const { user } = useAuth();
+  const { settings } = useSettings();
   const navigate = useNavigate();
 
   // Use a ref for the mutable Chess instance so it persists across renders
@@ -304,15 +306,17 @@ export default function GameRoom() {
     }
 
     const newSquares = {};
-    moves.forEach((move) => {
-      const isCapture = chess.get(move.to) !== null;
-      newSquares[move.to] = {
-        backgroundImage: isCapture
-          ? 'radial-gradient(circle, transparent 75%, rgba(0,0,0,.2) 75%)'
-          : 'radial-gradient(circle, rgba(0,0,0,.2) 25%, transparent 25%)',
-        borderRadius: '50%'
-      };
-    });
+    if (settings.showLegalMoves) {
+      moves.forEach((move) => {
+        const isCapture = chess.get(move.to) !== null;
+        newSquares[move.to] = {
+          backgroundImage: isCapture
+            ? 'radial-gradient(circle, transparent 75%, rgba(0,0,0,.2) 75%)'
+            : 'radial-gradient(circle, rgba(0,0,0,.2) 25%, transparent 25%)',
+          borderRadius: '50%'
+        };
+      });
+    }
     
     newSquares[square] = {
       backgroundColor: 'rgba(255, 255, 0, 0.4)'
@@ -380,9 +384,13 @@ export default function GameRoom() {
       (targetSquare.endsWith('8') || targetSquare.endsWith('1'));
 
     if (isPromotion) {
-      // Don't move yet — show the promotion picker
-      setPendingPromotion({ from: sourceSquare, to: targetSquare });
-      return false; // Let the piece snap back; we'll update the board after selection
+      if (settings.autoQueenPromotion) {
+        return executeMove(sourceSquare, targetSquare, 'q');
+      } else {
+        // Don't move yet — show the promotion picker
+        setPendingPromotion({ from: sourceSquare, to: targetSquare });
+        return false; // Let the piece snap back; we'll update the board after selection
+      }
     }
 
     return executeMove(sourceSquare, targetSquare);
@@ -469,6 +477,7 @@ export default function GameRoom() {
               onSquareClick: onSquareClick,
               onPieceDragCancel: onPieceDragCancel,
               squareStyles: dynamicSquareStyles,
+              showBoardNotation: settings.showCoordinates,
               boardOrientation: playerColor === 'w' ? 'white' : 'black',
               darkSquareStyle: { backgroundColor: '#475569' },
               lightSquareStyle: { backgroundColor: '#cbd5e1' },
@@ -683,7 +692,7 @@ export default function GameRoom() {
             </div>
           ) : (
             <button 
-              onClick={() => setShowResignConfirm(true)} 
+              onClick={() => settings.confirmResign ? setShowResignConfirm(true) : handleResign()} 
               className="btn" 
               style={{ flex: 1, background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)' }}
             >Resign</button>

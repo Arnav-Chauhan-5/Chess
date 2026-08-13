@@ -2,41 +2,131 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../hooks/useSocket';
-import { Play, Trophy, History, User, Settings, LogOut, Menu, X, ChevronDown, Eye } from 'lucide-react';
+import { useSettings } from '../../context/SettingsContext';
+import { Play, Trophy, History, User as UserIcon, Settings, LogOut, Menu, X, ChevronDown, Eye, Users, Bell } from 'lucide-react';
 
 export default function AppShell({ children }) {
   const { user, logout } = useAuth();
   const { socket } = useSocket();
+  const { settings } = useSettings();
   const location = useLocation();
   const navigate = useNavigate();
   
   const [onlineCount, setOnlineCount] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [incomingChallenge, setIncomingChallenge] = useState(null);
+  const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
-    if (!socket) return;
+    if (!user) return;
+    fetch(`http://localhost:3000/notifications/${user.id}`)
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setNotifications(data);
+        }
+      })
+      .catch(e => console.error('Failed to fetch notifications', e));
+  }, [user]);
+
+  useEffect(() => {
+    if (!socket || !user) return;
     
+    // Register user for online status and direct events
+    socket.emit('register_user', { userId: user.id });
+
     socket.on('online_count', (count) => {
       setOnlineCount(count);
     });
 
+    socket.on('friend_challenge_received', (data) => {
+      // Gate the toast behind the setting.
+      // Even if false, the state is synced elsewhere, just no toast here.
+      if (settings.challengeAlerts) {
+        setIncomingChallenge(data);
+      }
+    });
+
+    socket.on('friend_challenge_declined', (data) => {
+      alert(`Challenge declined.`);
+    });
+
+    socket.on('game_started', (data) => {
+      // If we are anywhere and a game starts (like from a challenge), navigate
+      // Only navigate if it's our game (we just accepted or got accepted)
+      setIncomingChallenge(null);
+      navigate(`/game/${data.gameId}`);
+    });
+
+    socket.on('notification_created', (notification) => {
+      setNotifications(prev => [notification, ...prev]);
+    });
+
     return () => {
       socket.off('online_count');
+      socket.off('friend_challenge_received');
+      socket.off('friend_challenge_declined');
+      socket.off('game_started');
+      socket.off('notification_created');
     };
-  }, [socket]);
+  }, [socket, user, navigate, settings.challengeAlerts]);
 
   const handleLogout = async () => {
     await logout();
     navigate('/');
   };
 
+  const handleRespondChallenge = (accept) => {
+    if (!incomingChallenge) return;
+    socket.emit('respond_friend_challenge', {
+      fromUserId: incomingChallenge.fromUserId,
+      toUserId: user.id,
+      accept,
+      timeControlSec: incomingChallenge.timeControlSec,
+      incrementSec: incomingChallenge.incrementSec
+    });
+    setIncomingChallenge(null);
+  };
+
+  const handleNotificationClick = async (notification) => {
+    setNotificationsOpen(false);
+    
+    // Mark as read
+    if (!notification.read) {
+      try {
+        await fetch(`http://localhost:3000/notifications/${notification.id}/read`, {
+          method: 'PATCH'
+        });
+        setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, read: true } : n));
+      } catch (e) {
+        console.error('Failed to mark notification as read', e);
+      }
+    }
+
+    // Navigate
+    if (notification.type === 'FRIEND_REQUEST') {
+      navigate('/friends');
+    } else if (notification.type === 'CHALLENGE' || notification.type === 'GAME_INVITE') {
+      // For a challenge, we might just navigate to friends where they can accept it
+      navigate('/friends');
+    } else if (notification.type === 'DRAW_OFFER') {
+      if (notification.data?.gameId) {
+        navigate(`/game/${notification.data.gameId}`);
+      }
+    }
+  };
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
   const navItems = [
     { path: '/lobby', label: 'Play', icon: Play },
+    { path: '/friends', label: 'Friends', icon: Users },
     { path: '/watch', label: 'Watch', icon: Eye },
     { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
     { path: '/history', label: 'Game History', icon: History },
-    { path: '/profile', label: 'Profile', icon: User },
+    { path: '/profile', label: 'Profile', icon: UserIcon },
     { path: '/settings', label: 'Settings', icon: Settings },
   ];
 
@@ -61,10 +151,12 @@ export default function AppShell({ children }) {
         className={`sidebar ${sidebarOpen ? 'open' : ''}`}
       >
         <div style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>
-          <div style={{ width: '32px', height: '32px', background: 'var(--accent-color)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-            CH
-          </div>
-          <span style={{ fontSize: '1.25rem', fontWeight: 'bold', letterSpacing: '1px' }}>Chess</span>
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', color: 'inherit' }}>
+            <div style={{ width: '32px', height: '32px', background: 'var(--accent-color)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+              CH
+            </div>
+            <span style={{ fontSize: '1.25rem', fontWeight: 'bold', letterSpacing: '1px' }}>Chess</span>
+          </Link>
           <button className="mobile-close" onClick={() => setSidebarOpen(false)} style={{ marginLeft: 'auto', display: 'none', background: 'none', border: 'none', color: 'white' }}>
             <X size={24} />
           </button>
@@ -126,71 +218,207 @@ export default function AppShell({ children }) {
           </div>
 
           {user && (
-            <div style={{ position: 'relative' }}>
-              <button 
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '0.75rem', 
-                  background: 'rgba(255,255,255,0.05)', 
-                  border: '1px solid var(--border-color)',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '24px',
-                  cursor: 'pointer',
-                  color: 'white',
-                  transition: 'background 0.2s'
-                }}
-                className="user-dropdown-btn"
-              >
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--accent-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.9rem' }}>
-                  {user.username.charAt(0).toUpperCase()}
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 'bold', lineHeight: 1 }}>{user.username}</span>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{user.rating || 1200}</span>
-                </div>
-                <ChevronDown size={16} style={{ color: 'var(--text-secondary)', marginLeft: '0.5rem' }} />
-              </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+              
+              {/* Notification Bell */}
+              <div style={{ position: 'relative' }}>
+                <button 
+                  onClick={() => { setNotificationsOpen(!notificationsOpen); setDropdownOpen(false); }}
+                  style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', position: 'relative' }}
+                  className="bell-btn"
+                >
+                  <Bell size={20} />
+                  {unreadCount > 0 && (
+                    <span style={{ 
+                      position: 'absolute', top: '-5px', right: '-5px', background: '#ef4444', color: 'white', 
+                      fontSize: '0.65rem', fontWeight: 'bold', width: '16px', height: '16px', borderRadius: '50%',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}>
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
 
-              {dropdownOpen && (
-                <div style={{ 
-                  position: 'absolute', 
-                  top: '100%', 
-                  right: 0, 
-                  marginTop: '0.5rem', 
-                  background: 'var(--bg-color)', 
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '8px',
-                  padding: '0.5rem',
-                  minWidth: '200px',
-                  boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
-                  animation: 'fadeIn 0.2s ease'
-                }}>
-                  <button onClick={handleLogout} style={{ 
-                    width: '100%', 
+                {notificationsOpen && (
+                  <div style={{ 
+                    position: 'absolute', top: '100%', right: '-50px', marginTop: '1rem', background: 'var(--bg-color)', 
+                    border: '1px solid var(--border-color)', borderRadius: '8px', minWidth: '280px', maxWidth: '320px',
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.5)', animation: 'fadeIn 0.2s ease', zIndex: 100,
+                    maxHeight: '400px', overflowY: 'auto'
+                  }}>
+                    <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 'bold' }}>Notifications</span>
+                      {unreadCount > 0 && (
+                        <button onClick={async () => {
+                          try {
+                            await fetch('http://localhost:3000/notifications/mark-all-read', { method: 'PATCH' });
+                            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                          } catch (e) {}
+                        }} style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', fontSize: '0.8rem' }}>
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+                    {notifications.length === 0 ? (
+                      <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                        No notifications
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        {notifications.map(n => (
+                          <div 
+                            key={n.id} 
+                            onClick={() => handleNotificationClick(n)}
+                            className="notification-item"
+                            style={{ 
+                              padding: '0.75rem 1rem', cursor: 'pointer', borderBottom: '1px solid var(--border-color)',
+                              background: n.read ? 'transparent' : 'rgba(255,255,255,0.05)',
+                              display: 'flex', flexDirection: 'column', gap: '0.25rem'
+                            }}
+                          >
+                            <span style={{ fontSize: '0.9rem', fontWeight: n.read ? 'normal' : 'bold', color: n.read ? 'var(--text-secondary)' : 'white' }}>
+                              {n.message}
+                            </span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                              {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ position: 'relative' }}>
+                <div 
+                  style={{ 
                     display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '0.75rem', 
-                    padding: '0.75rem 1rem',
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--danger)',
-                    cursor: 'pointer',
-                    borderRadius: '4px',
-                    textAlign: 'left'
-                  }} className="dropdown-item">
-                    <LogOut size={16} />
-                    Log Out
+                    alignItems: 'stretch', 
+                    background: 'rgba(255,255,255,0.05)', 
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '24px',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <Link 
+                    to="/profile"
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '0.75rem', 
+                      padding: '0.5rem 0.5rem 0.5rem 1rem',
+                      textDecoration: 'none',
+                      color: 'white',
+                      transition: 'background 0.2s'
+                    }}
+                    className="user-dropdown-btn"
+                  >
+                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--accent-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                      {user.username.charAt(0).toUpperCase()}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 'bold', lineHeight: 1 }}>{user.username}</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{user.rating || 1200}</span>
+                    </div>
+                  </Link>
+
+                  <button 
+                    onClick={() => { setDropdownOpen(!dropdownOpen); setNotificationsOpen(false); }}
+                    style={{ 
+                      background: 'transparent',
+                      border: 'none',
+                      borderLeft: '1px solid rgba(255,255,255,0.05)',
+                      padding: '0.5rem 0.75rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'background 0.2s'
+                    }}
+                    className="user-dropdown-btn"
+                  >
+                    <ChevronDown size={16} style={{ color: 'var(--text-secondary)' }} />
                   </button>
                 </div>
-              )}
+
+                {dropdownOpen && (
+                  <div style={{ 
+                    position: 'absolute', 
+                    top: '100%', 
+                    right: 0, 
+                    marginTop: '0.5rem', 
+                    background: 'var(--bg-color)', 
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '8px',
+                    padding: '0.5rem',
+                    minWidth: '200px',
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+                    animation: 'fadeIn 0.2s ease'
+                  }}>
+                    <button onClick={handleLogout} style={{ 
+                      width: '100%', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '0.75rem', 
+                      padding: '0.75rem 1rem',
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--danger)',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      textAlign: 'left'
+                    }} className="dropdown-item">
+                      <LogOut size={16} />
+                      Log Out
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </header>
 
         {/* Page Content */}
-        <main style={{ flex: 1 }}>
+        <main style={{ flex: 1, position: 'relative' }}>
+          {incomingChallenge && (
+            <div style={{
+              position: 'absolute',
+              top: '1rem',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: 'var(--bg-color)',
+              border: '1px solid var(--accent-color)',
+              padding: '1rem',
+              borderRadius: '8px',
+              zIndex: 50,
+              boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem'
+            }}>
+              <div>
+                <p style={{ margin: 0, fontWeight: 'bold' }}>Challenge from {incomingChallenge.fromUsername}</p>
+                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                  {incomingChallenge.timeControlSec / 60}+{incomingChallenge.incrementSec}
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button 
+                  onClick={() => handleRespondChallenge(true)}
+                  style={{ background: 'var(--accent-color)', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}
+                >
+                  Accept
+                </button>
+                <button 
+                  onClick={() => handleRespondChallenge(false)}
+                  style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}
+                >
+                  Decline
+                </button>
+              </div>
+            </div>
+          )}
           <Outlet />
         </main>
       </div>
@@ -217,7 +445,7 @@ export default function AppShell({ children }) {
         .user-dropdown-btn:hover {
           background: rgba(255,255,255,0.1) !important;
         }
-        .dropdown-item:hover {
+        .dropdown-item:hover, .notification-item:hover {
           background: rgba(255,255,255,0.05) !important;
         }
         @keyframes fadeIn {

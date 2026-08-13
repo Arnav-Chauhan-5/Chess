@@ -48,6 +48,41 @@ router.post('/logout', (req, res) => {
   res.json({ message: 'Logged out' });
 });
 
+router.post('/change-password', async (req, res) => {
+  try {
+    const { userId, currentPassword, newPassword } = req.body;
+    if (!userId || !currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Missing fields' });
+    }
+    
+    // Using authService logic or doing it here
+    const prisma = require('../db');
+    const bcrypt = require('bcryptjs');
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.passwordHash) {
+      return res.status(400).json({ error: 'User not found or has no password set' });
+    }
+
+    const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isValid) {
+      return res.status(401).json({ error: 'Invalid current password' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash }
+    });
+
+    res.json({ success: true, message: 'Password updated successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update password' });
+  }
+});
+
 const providers = ['google', 'github', 'facebook', 'microsoft'];
 const scopeMap = {
   google: ['profile', 'email'],

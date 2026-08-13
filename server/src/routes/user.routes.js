@@ -17,6 +17,21 @@ router.get('/leaderboard', async (req, res) => {
   }
 });
 
+router.get('/search', async (req, res) => {
+  try {
+    const { username } = req.query;
+    if (!username) return res.status(400).json({ error: 'username query is required' });
+    const user = await prisma.user.findUnique({
+      where: { username },
+      select: { id: true, username: true, rating: true, showOnlineStatus: true }
+    });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ user });
+  } catch (err) {
+    res.status(500).json({ error: 'Search failed' });
+  }
+});
+
 router.get('/profile', async (req, res) => {
   try {
     const { userId } = req.query;
@@ -30,6 +45,7 @@ router.get('/profile', async (req, res) => {
         rating: true, 
         avatarUrl: true, 
         createdAt: true,
+        showOnlineStatus: true,
         passwordHash: true, // Need this to check if they can unlink
         oauthAccounts: {
           select: { provider: true, providerAccountId: true }
@@ -105,6 +121,24 @@ router.patch('/profile', async (req, res) => {
     res.json({ user: updatedUser });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+router.patch('/settings', async (req, res) => {
+  try {
+    const { userId, showOnlineStatus } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(showOnlineStatus !== undefined && { showOnlineStatus })
+      }
+    });
+
+    res.json({ user: updatedUser });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update settings' });
   }
 });
 

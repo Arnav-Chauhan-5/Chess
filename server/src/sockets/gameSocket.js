@@ -1,6 +1,7 @@
 const gameState = require('../game-state/gameState');
 const aiService = require('../services/aiService');
 const gameService = require('../services/gameService');
+const notificationService = require('../services/notificationService');
 const prisma = require('../db');
 
 // Track which userId is associated with which socket, and pending disconnect timers
@@ -349,6 +350,20 @@ module.exports = (io, socket) => {
       const game = getActiveGame(gameId);
       if (!game) return;
       socket.to(`game_${gameId}`).emit('draw_offered');
+
+      const opponentId = game.whiteId === userId ? game.blackId : game.whiteId;
+      if (opponentId && !game.vsAI) {
+        prisma.user.findUnique({ where: { id: userId } }).then(requester => {
+          if (requester) {
+            notificationService.createNotification({
+              userId: opponentId,
+              type: 'DRAW_OFFER',
+              message: `${requester.username} offered a draw.`,
+              data: { gameId }
+            }).catch(err => console.error('Failed to create DRAW_OFFER notification', err));
+          }
+        });
+      }
     } catch (err) {
       socket.emit('error', { message: err.message });
     }
