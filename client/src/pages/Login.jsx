@@ -52,9 +52,9 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              className="surface-2"
               style={{
-                width: '100%', padding: '0.75rem', borderRadius: '8px',
-                background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)',
+                width: '100%', padding: '0.75rem',
                 color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none'
               }}
             />
@@ -66,9 +66,9 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              className="surface-2"
               style={{
-                width: '100%', padding: '0.75rem', borderRadius: '8px',
-                background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)',
+                width: '100%', padding: '0.75rem',
                 color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none'
               }}
             />

@@ -58,7 +58,7 @@ export default function DecorativeBoard({ autoplay = true }) {
     }}>
       <Chessboard options={{
         position: fen,
-        arePiecesDraggable: false,
+        allowDragging: false,
         darkSquareStyle: { backgroundColor: '#475569' },
         lightSquareStyle: { backgroundColor: '#cbd5e1' },
         animationDuration: autoplay ? 300 : 0

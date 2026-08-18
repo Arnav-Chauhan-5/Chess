@@ -86,7 +86,7 @@ export default function Settings() {
   };
 
   const ToggleRow = ({ id, label, checked, onChange, description }) => (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+    <div className="surface-2" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem' }}>
       <div>
         <label htmlFor={id} style={{ fontWeight: 'bold', display: 'block', cursor: 'pointer' }}>{label}</label>
         {description && <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{description}</span>}
@@ -148,6 +148,22 @@ export default function Settings() {
               checked={settings.showCoordinates}
               onChange={(val) => updateSetting('showCoordinates', val)}
             />
+            <div className="surface-2" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem' }}>
+              <div>
+                <label htmlFor="moveInputStyle" style={{ fontWeight: 'bold', display: 'block' }}>Move Input Style</label>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Choose how you prefer to move pieces.</span>
+              </div>
+              <select 
+                id="moveInputStyle"
+                value={settings.moveInputStyle || 'both'}
+                onChange={(e) => updateSetting('moveInputStyle', e.target.value)}
+                style={{ padding: '0.5rem', background: 'rgba(0,0,0,0.3)', color: 'white', border: '1px solid var(--border-color)', borderRadius: '4px', outline: 'none', cursor: 'pointer' }}
+              >
+                <option value="both">Drag & Click</option>
+                <option value="drag">Drag only</option>
+                <option value="click">Click only</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -179,7 +195,7 @@ export default function Settings() {
             {privacyMsg && <span style={{ color: '#10b981', fontSize: '0.9rem' }}>{privacyMsg}</span>}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="surface-2" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem' }}>
               <div>
                 <label htmlFor="showOnline" style={{ fontWeight: 'bold', display: 'block', cursor: 'pointer' }}>Show Online Status</label>
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Allow friends to see when you are online.</span>
@@ -200,7 +216,7 @@ export default function Settings() {
           <h3 style={{ marginBottom: '1.5rem', color: 'var(--accent-color)' }}>Account Settings</h3>
           
           <div style={{ marginBottom: '2rem' }}>
-            <Link to="/profile" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-primary)', textDecoration: 'none', background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', transition: 'background 0.2s' }} className="hover-bg-light">
+            <Link to="/profile" className="surface-2 hover-bg-light" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-primary)', textDecoration: 'none', padding: '1rem', transition: 'background 0.2s' }}>
               <LinkIcon size={20} color="var(--accent-color)" />
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontWeight: 'bold' }}>Manage Linked Accounts</span>
@@ -214,22 +230,22 @@ export default function Settings() {
               <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', fontSize: '1.1rem' }}>
                 <Lock size={18} /> Change Password
               </h4>
-              <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <form onSubmit={handleChangePassword} className="surface-2" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.5rem' }}>
                 <input 
                   type="password" 
                   placeholder="Current Password"
                   value={passwords.currentPassword}
                   onChange={(e) => setPasswords({...passwords, currentPassword: e.target.value})}
-                  className="input-field"
-                  style={{ padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+                  className="surface-2"
+                  style={{ padding: '0.75rem', color: 'white', border: '1px solid var(--border-color)', outline: 'none' }}
                 />
                 <input 
                   type="password" 
                   placeholder="New Password"
                   value={passwords.newPassword}
                   onChange={(e) => setPasswords({...passwords, newPassword: e.target.value})}
-                  className="input-field"
-                  style={{ padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+                  className="surface-2"
+                  style={{ padding: '0.75rem', color: 'white', border: '1px solid var(--border-color)', outline: 'none' }}
                 />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <button type="submit" className="btn" style={{ background: 'var(--accent-color)', padding: '0.75rem 1.5rem', border: 'none', borderRadius: '4px', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}>

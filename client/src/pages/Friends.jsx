@@ -4,7 +4,7 @@ import { useSocket } from '../hooks/useSocket';
 import { Users, UserPlus, Check, X, Swords } from 'lucide-react';
 
 export default function Friends() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { socket } = useSocket();
   const [friends, setFriends] = useState([]);
   const [incoming, setIncoming] = useState([]);
@@ -16,7 +16,7 @@ export default function Friends() {
   const fetchFriends = async () => {
     try {
       const res = await fetch(`http://localhost:3000/friends/${user.id}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
         const data = await res.json();
@@ -54,7 +54,7 @@ export default function Friends() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ toUsername: searchUsername })
       });
@@ -76,7 +76,7 @@ export default function Friends() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ friendshipId, accept })
       });
@@ -115,13 +115,7 @@ export default function Friends() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
         
         {/* Left Column: Friends List */}
-        <div style={{ 
-          background: 'rgba(255,255,255,0.03)', 
-          border: '1px solid var(--border-color)', 
-          borderRadius: '12px', 
-          padding: '1.5rem',
-          backdropFilter: 'blur(10px)'
-        }}>
+        <div className="glass-panel">
           <h2 style={{ marginTop: 0, fontSize: '1.25rem', marginBottom: '1rem' }}>My Friends</h2>
           
           {friends.length === 0 ? (
@@ -129,9 +123,9 @@ export default function Friends() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {friends.map(f => (
-                <div key={f.id} style={{
+                <div key={f.id} className="surface-2" style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px'
+                  padding: '1rem'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div style={{ position: 'relative' }}>
@@ -153,17 +147,11 @@ export default function Friends() {
                   <button 
                     onClick={() => handleChallenge(f)}
                     disabled={!f.isOnline}
+                    className="btn"
                     style={{
-                      background: f.isOnline ? 'var(--accent-color)' : 'rgba(255,255,255,0.1)',
-                      color: 'white',
-                      border: 'none',
-                      padding: '0.5rem 1rem',
-                      borderRadius: '4px',
-                      cursor: f.isOnline ? 'pointer' : 'not-allowed',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      opacity: f.isOnline ? 1 : 0.5
+                      opacity: f.isOnline ? 1 : 0.5,
+                      height: 'auto',
+                      padding: '0.5rem 1rem'
                     }}
                   >
                     <Swords size={16} /> Challenge
@@ -177,13 +165,7 @@ export default function Friends() {
         {/* Right Column: Requests & Search */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           
-          <div style={{ 
-            background: 'rgba(255,255,255,0.03)', 
-            border: '1px solid var(--border-color)', 
-            borderRadius: '12px', 
-            padding: '1.5rem',
-            backdropFilter: 'blur(10px)'
-          }}>
+          <div className="glass-panel">
             <h2 style={{ marginTop: 0, fontSize: '1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <UserPlus size={20} /> Add Friend
             </h2>
@@ -193,17 +175,12 @@ export default function Friends() {
                 placeholder="Username..."
                 value={searchUsername}
                 onChange={e => setSearchUsername(e.target.value)}
+                className="surface-2"
                 style={{
-                  flex: 1, padding: '0.75rem', borderRadius: '8px',
-                  border: '1px solid var(--border-color)',
-                  background: 'rgba(0,0,0,0.2)', color: 'white',
-                  outline: 'none'
+                  flex: 1, padding: '0.75rem', color: 'white', outline: 'none'
                 }}
               />
-              <button type="submit" style={{
-                background: 'var(--accent-color)', color: 'white', border: 'none',
-                padding: '0 1.5rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'
-              }}>
+              <button type="submit" className="btn" style={{ padding: '0 1.5rem' }}>
                 Send
               </button>
             </form>
@@ -212,19 +189,13 @@ export default function Friends() {
           </div>
 
           {(incoming.length > 0 || outgoing.length > 0) && (
-            <div style={{ 
-              background: 'rgba(255,255,255,0.03)', 
-              border: '1px solid var(--border-color)', 
-              borderRadius: '12px', 
-              padding: '1.5rem',
-              backdropFilter: 'blur(10px)'
-            }}>
+            <div className="glass-panel">
               {incoming.length > 0 && (
                 <div style={{ marginBottom: outgoing.length > 0 ? '1.5rem' : '0' }}>
                   <h3 style={{ marginTop: 0, fontSize: '1rem', marginBottom: '1rem' }}>Incoming Requests</h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {incoming.map(req => (
-                      <div key={req.friendshipId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+                      <div key={req.friendshipId} className="surface-2" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem' }}>
                         <span>{req.username}</span>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                           <button onClick={() => respondToRequest(req.friendshipId, true)} style={{ background: '#10b981', color: 'white', border: 'none', padding: '0.4rem', borderRadius: '4px', cursor: 'pointer' }}><Check size={16}/></button>
@@ -241,7 +212,7 @@ export default function Friends() {
                   <h3 style={{ marginTop: 0, fontSize: '1rem', marginBottom: '1rem' }}>Outgoing Requests</h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {outgoing.map(req => (
-                      <div key={req.friendshipId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+                      <div key={req.friendshipId} className="surface-2" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem' }}>
                         <span style={{ color: 'var(--text-secondary)' }}>{req.username}</span>
                         <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Pending</span>
                       </div>

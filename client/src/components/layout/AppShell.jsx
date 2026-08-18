@@ -3,10 +3,10 @@ import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../hooks/useSocket';
 import { useSettings } from '../../context/SettingsContext';
-import { Play, Trophy, History, User as UserIcon, Settings, LogOut, Menu, X, ChevronDown, Eye, Users, Bell } from 'lucide-react';
+import { Play, Trophy, History, User as UserIcon, Settings, LogOut, Menu, X, ChevronDown, Eye, Users, Bell, BookOpen } from 'lucide-react';
 
 export default function AppShell({ children }) {
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const { socket } = useSocket();
   const { settings } = useSettings();
   const location = useLocation();
@@ -20,16 +20,21 @@ export default function AppShell({ children }) {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
-    if (!user) return;
-    fetch(`http://localhost:3000/notifications/${user.id}`)
-      .then(r => r.json())
+    if (!user || !token) return;
+    fetch(`http://localhost:3000/notifications/${user.id}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(async r => {
+        if (!r.ok) throw new Error(await r.text());
+        return r.json();
+      })
       .then(data => {
         if (Array.isArray(data)) {
           setNotifications(data);
         }
       })
       .catch(e => console.error('Failed to fetch notifications', e));
-  }, [user]);
+  }, [user, token]);
 
   useEffect(() => {
     if (!socket || !user) return;
@@ -97,7 +102,8 @@ export default function AppShell({ children }) {
     if (!notification.read) {
       try {
         await fetch(`http://localhost:3000/notifications/${notification.id}/read`, {
-          method: 'PATCH'
+          method: 'PATCH',
+          headers: { 'Authorization': `Bearer ${token}` }
         });
         setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, read: true } : n));
       } catch (e) {
@@ -122,6 +128,7 @@ export default function AppShell({ children }) {
 
   const navItems = [
     { path: '/lobby', label: 'Play', icon: Play },
+    { path: '/rules', label: 'How to Play', icon: BookOpen },
     { path: '/friends', label: 'Friends', icon: Users },
     { path: '/watch', label: 'Watch', icon: Eye },
     { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
@@ -131,7 +138,7 @@ export default function AppShell({ children }) {
   ];
 
   return (
-    <div className="app-shell" style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-color)', color: 'var(--text-primary)' }}>
+    <div className="app-shell" style={{ display: 'flex', minHeight: '100vh', background: 'transparent', color: 'var(--text-primary)' }}>
       {/* Sidebar Navigation */}
       <aside 
         style={{ 
@@ -211,10 +218,6 @@ export default function AppShell({ children }) {
             <button className="mobile-menu-btn" onClick={() => setSidebarOpen(true)} style={{ display: 'none', background: 'none', border: 'none', color: 'white' }}>
               <Menu size={24} />
             </button>
-            <div style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
-              <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }}></span>
-              {onlineCount} Players Online
-            </div>
           </div>
 
           {user && (
@@ -241,7 +244,7 @@ export default function AppShell({ children }) {
 
                 {notificationsOpen && (
                   <div style={{ 
-                    position: 'absolute', top: '100%', right: '-50px', marginTop: '1rem', background: 'var(--bg-color)', 
+                    position: 'absolute', top: '100%', right: '-50px', marginTop: '1rem', background: 'var(--surface-1)', 
                     border: '1px solid var(--border-color)', borderRadius: '8px', minWidth: '280px', maxWidth: '320px',
                     boxShadow: '0 10px 25px rgba(0,0,0,0.5)', animation: 'fadeIn 0.2s ease', zIndex: 100,
                     maxHeight: '400px', overflowY: 'auto'
@@ -251,7 +254,10 @@ export default function AppShell({ children }) {
                       {unreadCount > 0 && (
                         <button onClick={async () => {
                           try {
-                            await fetch('http://localhost:3000/notifications/mark-all-read', { method: 'PATCH' });
+                            await fetch('http://localhost:3000/notifications/mark-all-read', { 
+                              method: 'PATCH',
+                              headers: { 'Authorization': `Bearer ${token}` }
+                            });
                             setNotifications(prev => prev.map(n => ({ ...n, read: true })));
                           } catch (e) {}
                         }} style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', fontSize: '0.8rem' }}>
@@ -348,7 +354,7 @@ export default function AppShell({ children }) {
                     top: '100%', 
                     right: 0, 
                     marginTop: '0.5rem', 
-                    background: 'var(--bg-color)', 
+                    background: 'var(--surface-1)', 
                     border: '1px solid var(--border-color)',
                     borderRadius: '8px',
                     padding: '0.5rem',
@@ -387,7 +393,7 @@ export default function AppShell({ children }) {
               top: '1rem',
               left: '50%',
               transform: 'translateX(-50%)',
-              background: 'var(--bg-color)',
+              background: 'var(--surface-1)',
               border: '1px solid var(--accent-color)',
               padding: '1rem',
               borderRadius: '8px',

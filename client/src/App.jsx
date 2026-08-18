@@ -10,6 +10,7 @@ import Friends from './pages/Friends';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import GameRoom from './pages/GameRoom';
+import Rules from './pages/Rules';
 import { AuthProvider } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
 import AppShell from './components/layout/AppShell';
@@ -35,6 +36,7 @@ function App() {
               <Route path="/friends" element={<Friends />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/rules" element={<Rules />} />
               <Route path="/game/:gameId" element={<GameRoom />} />
             </Route>
           </Routes>

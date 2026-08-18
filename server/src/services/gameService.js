@@ -17,6 +17,8 @@ class GameService {
         incrementSec,
         whiteTimeLeftMs: timeControlSec * 1000,
         blackTimeLeftMs: timeControlSec * 1000,
+        whiteRatingAtGame: whiteUser?.rating || 1200,
+        blackRatingAtGame: blackUser?.rating || 1200,
       }
     });
 
@@ -41,7 +43,7 @@ class GameService {
     return game;
   }
 
-  async createAIGame(playerId, aiDifficulty, timeControlSec, incrementSec, preferredColor = 'random') {
+  async createAIGame(playerId, aiDifficulty, aiPersonaName, timeControlSec, incrementSec, preferredColor = 'random') {
     // Resolve 'random' server-side so the client can't game it
     let humanColor = preferredColor;
     if (humanColor === 'random') {
@@ -63,7 +65,7 @@ class GameService {
       10: { label: 'Grandmaster', rating: 2800 }
     };
     const aiInfo = aiLabels[aiDifficulty] || { label: 'AI', rating: 1200 };
-    const aiName = `AI (${aiInfo.label})`;
+    const aiName = aiPersonaName || `AI (${aiInfo.label})`;
 
     const game = await prisma.game.create({
       data: {
@@ -72,10 +74,13 @@ class GameService {
         vsAI: true,
         isCasual: true,
         aiDifficulty,
+        aiPersonaName: aiName,
         timeControlSec,
         incrementSec,
         whiteTimeLeftMs: timeControlSec * 1000,
         blackTimeLeftMs: timeControlSec * 1000,
+        whiteRatingAtGame: humanIsWhite ? user?.rating || 1200 : aiInfo.rating,
+        blackRatingAtGame: humanIsWhite ? aiInfo.rating : user?.rating || 1200,
       }
     });
 

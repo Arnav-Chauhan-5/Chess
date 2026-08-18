@@ -91,6 +91,9 @@ model Game {
   endReason       EndReason?
   whiteRatingDelta Int?
   blackRatingDelta Int?
+  whiteRatingAtGame Int?
+  blackRatingAtGame Int?
+  aiPersonaName   String?
   timeControlSec  Int?                            // e.g. 300 for 5+0
   incrementSec    Int?       @default(0)
   whiteTimeLeftMs Int?

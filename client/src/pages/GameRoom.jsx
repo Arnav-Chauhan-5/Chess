@@ -39,6 +39,7 @@ export default function GameRoom() {
   const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [optionSquares, setOptionSquares] = useState({});
+  const [moveFrom, setMoveFrom] = useState(null);
   const movesEndRef = useRef(null);
 
   // Fix 1: Promotion picker state
@@ -55,6 +56,12 @@ export default function GameRoom() {
   const [pgn, setPgn] = useState('');
   const [showRematchPrompt, setShowRematchPrompt] = useState(false);
   const [showTakebackPrompt, setShowTakebackPrompt] = useState(false);
+  
+  // Names and ratings from server
+  const [whiteName, setWhiteName] = useState('White');
+  const [blackName, setBlackName] = useState('Black');
+  const [whiteRating, setWhiteRating] = useState(1200);
+  const [blackRating, setBlackRating] = useState(1200);
 
   useEffect(() => {
     if (!socket || !user) return;
@@ -66,9 +73,14 @@ export default function GameRoom() {
       setFen(data.fen);
       setWhiteTime(data.whiteTimeLeftMs);
       setBlackTime(data.blackTimeLeftMs);
+      setWhiteName(data.whiteUsername || 'White');
+      setBlackName(data.blackUsername || 'Black');
+      setWhiteRating(data.whiteRating || 1200);
+      setBlackRating(data.blackRating || 1200);
       
-      if (data.whiteId === user.id) setPlayerColor('w');
-      else if (data.blackId === user.id) setPlayerColor('b');
+      console.log('SYNC DATA', { dataWhiteId: data.whiteId, dataBlackId: data.blackId, userId: user?.id, originalPlayerColor: playerColor });
+      if (data.whiteId === user?.id) setPlayerColor('w');
+      else if (data.blackId === user?.id) setPlayerColor('b');
       else setPlayerColor('viewer');
       setIsCasual(data.isCasual ?? true);
     });
@@ -286,12 +298,14 @@ export default function GameRoom() {
     
     if (chess.turn() !== playerColor) {
       setOptionSquares({});
+      setMoveFrom(null);
       return;
     }
     
     const piece = chess.get(square);
     if (!piece || piece.color !== playerColor) {
       setOptionSquares({});
+      setMoveFrom(null);
       return;
     }
 
@@ -302,6 +316,7 @@ export default function GameRoom() {
     
     if (moves.length === 0) {
       setOptionSquares({});
+      setMoveFrom(null);
       return;
     }
 
@@ -323,58 +338,125 @@ export default function GameRoom() {
     };
     
     setOptionSquares(newSquares);
-  }, [playerColor]);
+    setMoveFrom(square);
+  }, [playerColor, settings.showLegalMoves]);
 
-  const onPieceDrag = useCallback(({ square }) => {
-    if (playerColor === 'viewer') return;
-    getMoveOptions(square);
-  }, [getMoveOptions, playerColor]);
-
-  const onSquareClick = useCallback(({ square }) => {
-    if (playerColor === 'viewer') return;
-    // If promotion picker is open, clicking elsewhere cancels it
-    if (pendingPromotion) {
-      setPendingPromotion(null);
-      return;
+  const onPieceDragBegin = useCallback((arg1, arg2) => {
+    if (settings.moveInputStyle === 'click') return;
+    
+    // react-chessboard v5 provides { piece, sourceSquare }, older versions provided (piece, sourceSquare)
+    const sourceSquare = arg1?.sourceSquare || (typeof arg2 === 'string' ? arg2 : null);
+    
+    if (sourceSquare) {
+      getMoveOptions(sourceSquare);
     }
-    getMoveOptions(square);
-  }, [getMoveOptions, pendingPromotion, playerColor]);
-
-  const onPieceDragCancel = useCallback(() => {
-    setOptionSquares({});
-  }, []);
+  }, [settings.moveInputStyle, getMoveOptions]);
 
   // Executes the actual move (used by onDrop for non-promotion and by promotion picker callback)
   const executeMove = useCallback((from, to, promotion) => {
     const chess = gameRef.current;
     try {
+      console.log(`[executeMove] Attempting move ${from} to ${to} (promotion: ${promotion})`);
       const moveObj = { from, to };
       if (promotion) moveObj.promotion = promotion;
 
+      // Make the move on our local board state
       const move = chess.move(moveObj);
-      if (move === null) return false;
+      if (move === null) {
+        console.warn('[executeMove] Invalid move returned null');
+        return false;
+      }
 
-      setFen(chess.fen());
+      const newFen = chess.fen();
+      console.log(`[executeMove] Move successful. New FEN: ${newFen}`);
       
+      // CRITICAL: Update the visual board state
+      setFen(newFen);
+      
+      console.log(`[executeMove] Emitting make_move to server...`);
       socket.emit('make_move', {
         gameId,
         userId: user?.id,
         move: move.san
       });
 
+      console.log(`[executeMove] Returning true for valid move.`);
       return true;
     } catch (e) {
-      console.error('Move error:', e);
+      console.error('[executeMove] Move error caught:', e);
+      // Only undo if the error happened AFTER a successful chess.move
+      // (chess.move itself throws if invalid, so no move was made in that case)
+      if (e.message !== 'Invalid move' && !e.message.includes('Invalid move')) {
+        chess.undo();
+      }
+      console.log(`[executeMove] Returning false due to error.`);
       return false;
     }
   }, [socket, gameId, user]);
 
+  const onSquareClick = useCallback((arg1) => {
+    console.log('SQUARE CLICK', { arg1, playerColor, moveInputStyle: settings.moveInputStyle });
+    if (playerColor === 'viewer') return;
+    if (settings.moveInputStyle === 'drag') return; // Only drag allowed
+
+    let square = typeof arg1 === 'string' ? arg1 : arg1?.square;
+    if (!square) return;
+
+    if (pendingPromotion) {
+      setPendingPromotion(null);
+      return;
+    }
+
+    const chess = gameRef.current;
+
+    // Check if clicking a destination for an already selected piece
+    if (moveFrom && optionSquares[square] && square !== moveFrom) {
+      const piece = chess.get(moveFrom);
+      console.log('SQUARE CLICK: Executing move', { moveFrom, square });
+      const isPromotion = piece && piece.type === 'p' && 
+        (square.endsWith('8') || square.endsWith('1'));
+
+      if (isPromotion) {
+        if (settings.autoQueenPromotion) {
+          executeMove(moveFrom, square, 'q');
+        } else {
+          setPendingPromotion({ from: moveFrom, to: square });
+        }
+      } else {
+        executeMove(moveFrom, square);
+      }
+      setOptionSquares({});
+      setMoveFrom(null);
+      return;
+    }
+
+    // Otherwise, select the piece (if own color) or clear
+    const piece = chess.get(square);
+    if (piece && piece.color === playerColor) {
+      getMoveOptions(square);
+    } else {
+      setOptionSquares({});
+      setMoveFrom(null);
+    }
+  }, [playerColor, settings.moveInputStyle, pendingPromotion, moveFrom, optionSquares, executeMove, getMoveOptions, settings.autoQueenPromotion]);
+
+  const onPieceDragCancel = useCallback(() => {
+    setOptionSquares({});
+    setMoveFrom(null);
+  }, []);
+
   // react-chessboard v5 calls onPieceDrop with a SINGLE OBJECT arg:
   //   { piece, sourceSquare, targetSquare }
-  const onDrop = useCallback(({ sourceSquare, targetSquare }) => {
+  const onDrop = useCallback((arg1, arg2) => {
     setOptionSquares({});
+    setMoveFrom(null);
     if (isGameOver) return false;
+    if (settings.moveInputStyle === 'click') return false;
     
+    let sourceSquare = typeof arg1 === 'string' ? arg1 : arg1?.sourceSquare;
+    let targetSquare = typeof arg2 === 'string' ? arg2 : arg1?.targetSquare;
+    if (!sourceSquare || !targetSquare) return false;
+
     const chess = gameRef.current;
     if (chess.turn() !== playerColor) return false;
 
@@ -393,8 +475,10 @@ export default function GameRoom() {
       }
     }
 
-    return executeMove(sourceSquare, targetSquare);
-  }, [isGameOver, playerColor, executeMove]);
+    const result = executeMove(sourceSquare, targetSquare);
+    console.log(`[onDrop] Returning result from executeMove:`, result);
+    return result;
+  }, [isGameOver, playerColor, executeMove, settings.moveInputStyle, settings.autoQueenPromotion]);
 
   const handlePromotionChoice = useCallback((promotionPiece) => {
     if (!pendingPromotion) return;
@@ -433,8 +517,8 @@ export default function GameRoom() {
         {/* Opponent Info */}
         <div className="glass-panel" style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div style={{ fontWeight: 'bold' }}>Opponent</div>
-            <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Rating: 1200</div>
+            <div style={{ fontWeight: 'bold' }}>{playerColor === 'w' || playerColor === 'viewer' ? blackName : whiteName}</div>
+            <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Rating: {playerColor === 'w' || playerColor === 'viewer' ? blackRating : whiteRating}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem', height: '1.5rem' }}>
               {renderCaptures(opponentCaptures, playerColor === 'w' ? 'w' : 'b')}
               {opponentAdvantage > 0 && <span style={{ fontSize: '0.8rem', color: 'var(--success)' }}>+{opponentAdvantage}</span>}
@@ -470,18 +554,21 @@ export default function GameRoom() {
 
         {/* Board */}
         <div style={{ borderRadius: '8px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', position: 'relative' }}>
-          <Chessboard options={{
+          <Chessboard
+            options={{
               position: fen,
               onPieceDrop: onDrop,
-              onPieceDrag: onPieceDrag,
-              onSquareClick: onSquareClick,
+              onPieceDrag: onPieceDragBegin,
               onPieceDragCancel: onPieceDragCancel,
+              onSquareClick: onSquareClick,
               squareStyles: dynamicSquareStyles,
-              showBoardNotation: settings.showCoordinates,
+              showNotation: settings.showCoordinates,
               boardOrientation: playerColor === 'w' ? 'white' : 'black',
               darkSquareStyle: { backgroundColor: '#475569' },
               lightSquareStyle: { backgroundColor: '#cbd5e1' },
-            }} />
+              allowDragging: settings.moveInputStyle !== 'click'
+            }}
+          />
 
           {/* Fix 1: Promotion Picker Overlay */}
           {pendingPromotion && (
@@ -543,8 +630,13 @@ export default function GameRoom() {
         {/* Player Info */}
         <div className="glass-panel" style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div style={{ fontWeight: 'bold' }}>{user?.username || 'You'}</div>
-            <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Rating: 1200</div>
+            <div style={{ fontWeight: 'bold' }}>
+              {playerColor === 'w' || playerColor === 'viewer' ? whiteName : blackName}
+              {playerColor !== 'viewer' ? ' (You)' : ''}
+            </div>
+            <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+              Rating: {playerColor === 'w' || playerColor === 'viewer' ? whiteRating : blackRating}
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem', height: '1.5rem' }}>
               {renderCaptures(myCaptures, playerColor === 'w' ? 'b' : 'w')}
               {myAdvantage > 0 && <span style={{ fontSize: '0.8rem', color: 'var(--success)' }}>+{myAdvantage}</span>}
@@ -565,12 +657,12 @@ export default function GameRoom() {
             <h3 style={{ margin: 0 }}>Moves</h3>
             {openingName && <span style={{ fontSize: '0.8rem', color: 'var(--accent-color)', fontWeight: 'bold' }}>{openingName}</span>}
           </div>
-          <div style={{ flex: 1, overflowY: 'auto', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', padding: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+          <div className="surface-2" style={{ flex: 1, overflowY: 'auto', padding: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
             {movePairs.length === 0 ? (
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', fontStyle: 'italic', padding: '0.5rem' }}>Game started...</p>
             ) : (
               movePairs.map((pair, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: '1rem', padding: '0.25rem 0.5rem', background: idx % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'transparent', borderRadius: '4px' }}>
+                <div key={idx} style={{ display: 'flex', gap: '1rem', padding: '0.25rem 0.5rem', background: idx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent', borderRadius: '4px' }}>
                   <span style={{ color: 'var(--text-secondary)', width: '2rem' }}>{idx + 1}.</span>
                   <span style={{ flex: 1, fontWeight: 'bold' }}>{pair.w}</span>
                   <span style={{ flex: 1, fontWeight: 'bold' }}>{pair.b}</span>
@@ -582,7 +674,7 @@ export default function GameRoom() {
         </div>
 
         {isGameOver && (
-          <div className="glass-panel animate-fade-in" style={{ background: 'rgba(255, 255, 255, 0.1)', border: '1px solid var(--accent-color)' }}>
+          <div className="glass-panel animate-fade-in" style={{ border: '1px solid var(--accent-color)' }}>
             <h3 style={{ color: 'var(--accent-color)', marginBottom: '0.5rem' }}>Game Over</h3>
             <p style={{ marginBottom: '0.5rem' }}>{gameOverReason}</p>
             {whiteRatingDelta !== null && blackRatingDelta !== null && (
@@ -603,7 +695,7 @@ export default function GameRoom() {
         )}
 
         {drawOffer && !isGameOver && (
-          <div className="glass-panel animate-fade-in" style={{ background: 'rgba(255, 255, 255, 0.1)', border: '1px solid var(--accent-color)' }}>
+          <div className="glass-panel animate-fade-in" style={{ border: '1px solid var(--accent-color)' }}>
             <h3 style={{ color: 'var(--accent-color)', marginBottom: '0.5rem' }}>Draw Offered</h3>
             <p>Your opponent has offered a draw.</p>
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
@@ -614,7 +706,7 @@ export default function GameRoom() {
         )}
 
         {showRematchPrompt && (
-          <div className="glass-panel animate-fade-in" style={{ background: 'rgba(255, 255, 255, 0.1)', border: '1px solid var(--accent-color)' }}>
+          <div className="glass-panel animate-fade-in" style={{ border: '1px solid var(--accent-color)' }}>
             <h3 style={{ color: 'var(--accent-color)', marginBottom: '0.5rem' }}>Rematch?</h3>
             <p>Your opponent wants a rematch.</p>
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
@@ -625,7 +717,7 @@ export default function GameRoom() {
         )}
 
         {showTakebackPrompt && !isGameOver && (
-          <div className="glass-panel animate-fade-in" style={{ background: 'rgba(255, 255, 255, 0.1)', border: '1px solid var(--accent-color)' }}>
+          <div className="glass-panel animate-fade-in" style={{ border: '1px solid var(--accent-color)' }}>
             <h3 style={{ color: 'var(--accent-color)', marginBottom: '0.5rem' }}>Takeback Request</h3>
             <p>Your opponent requested a takeback.</p>
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
@@ -637,7 +729,7 @@ export default function GameRoom() {
 
         <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <h3 style={{ marginBottom: '1rem' }}>Chat</h3>
-          <div style={{ flex: 1, minHeight: '300px', maxHeight: '400px', overflowY: 'auto', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', padding: '1rem', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <div className="surface-2" style={{ flex: 1, minHeight: '300px', maxHeight: '400px', overflowY: 'auto', padding: '1rem', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {messages.length === 0 ? (
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', fontStyle: 'italic' }}>Chat connected...</p>
             ) : (
@@ -653,14 +745,14 @@ export default function GameRoom() {
               ))
             )}
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div className="surface-2" style={{ display: 'flex', gap: '0.5rem', padding: '0.25rem' }}>
             <input 
               type="text" 
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
               placeholder="Send a message..." 
-              style={{ flex: 1, padding: '0.5rem', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'white', borderRadius: '4px' }} 
+              style={{ flex: 1, padding: '0.5rem', background: 'transparent', border: 'none', color: 'white', outline: 'none' }} 
             />
             <button onClick={handleSendMessage} className="btn" style={{ padding: '0.5rem 1rem' }}>Send</button>
           </div>

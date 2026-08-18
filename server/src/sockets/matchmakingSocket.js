@@ -132,9 +132,9 @@ module.exports = (io, socket) => {
     }
   });
 
-  socket.on('start_ai_game', async ({ userId, difficulty, timeControlSec, incrementSec, preferredColor }) => {
+  socket.on('start_ai_game', async ({ userId, difficulty, botName, timeControlSec, incrementSec, preferredColor }) => {
     try {
-      const { game, humanColor } = await gameService.createAIGame(userId, difficulty, timeControlSec, incrementSec, preferredColor || 'random');
+      const { game, humanColor } = await gameService.createAIGame(userId, difficulty, botName, timeControlSec, incrementSec, preferredColor || 'random');
       socket.emit('match_found', { gameId: game.id, color: humanColor });
 
       // If human is black, AI (white) moves first — trigger opening move immediately

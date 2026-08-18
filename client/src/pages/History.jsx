@@ -50,7 +50,9 @@ export default function History() {
             <tbody>
               {games.map(game => {
                 const isWhite = game.whiteId === user?.id;
-                const opponent = isWhite ? (game.blackPlayer?.username || 'AI') : (game.whitePlayer?.username || 'AI');
+                let opponent = isWhite ? (game.blackPlayer?.username) : (game.whitePlayer?.username);
+                if (game.vsAI) opponent = game.aiPersonaName || "AI";
+                else if (!opponent) opponent = "Unknown";
                 
                 let resultClass = 'text-secondary';
                 let resultText = 'Draw';

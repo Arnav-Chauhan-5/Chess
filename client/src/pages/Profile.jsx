@@ -96,7 +96,8 @@ export default function Profile() {
                 type="text" 
                 value={editUsername} 
                 onChange={(e) => setEditUsername(e.target.value)}
-                style={{ fontSize: '2rem', fontWeight: 'bold', background: 'rgba(0,0,0,0.2)', color: 'white', border: '1px solid var(--accent-color)', borderRadius: '8px', padding: '0.5rem', width: '300px' }}
+                className="surface-2"
+                style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white', padding: '0.5rem', width: '300px', outline: 'none' }}
               />
               <button onClick={handleSaveProfile} style={{ background: '#10b981', color: 'white', border: 'none', padding: '0.5rem', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                 <Check size={24} />
@@ -131,19 +132,19 @@ export default function Profile() {
             Statistics
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '8px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div className="surface-2" style={{ padding: '1.5rem', textAlign: 'center' }}>
               <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{stats.total}</div>
               <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Games Played</div>
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '8px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div className="surface-2" style={{ padding: '1.5rem', textAlign: 'center' }}>
               <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#10b981' }}>{stats.wins}</div>
               <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Wins</div>
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '8px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div className="surface-2" style={{ padding: '1.5rem', textAlign: 'center' }}>
               <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#ef4444' }}>{stats.losses}</div>
               <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Losses</div>
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '8px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div className="surface-2" style={{ padding: '1.5rem', textAlign: 'center' }}>
               <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>{stats.draws}</div>
               <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Draws</div>
             </div>
@@ -161,7 +162,7 @@ export default function Profile() {
               profileUser.oauthAccounts.map(account => {
                 const canUnlink = profileUser.hasPassword || profileUser.oauthAccounts.length > 1;
                 return (
-                  <div key={account.provider} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '1rem 1.5rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div key={account.provider} className="surface-2" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                       <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981' }}></div>
                       <span style={{ fontWeight: 'bold', textTransform: 'capitalize' }}>{account.provider}</span>
@@ -190,7 +191,7 @@ export default function Profile() {
             )}
             
             {profileUser.hasPassword && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '1rem 1.5rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div className="surface-2" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981' }}></div>
                   <span style={{ fontWeight: 'bold' }}>Password Authentication</span>
@@ -222,7 +223,16 @@ export default function Profile() {
             <tbody>
               {recentGames.map(game => {
                 const isWhite = game.whiteId === user?.id;
-                const opponent = isWhite ? (game.blackPlayer?.username || 'AI') : (game.whitePlayer?.username || 'AI');
+                
+                let myRating = isWhite ? game.whiteRatingAtGame : game.blackRatingAtGame;
+                myRating = myRating || (isWhite ? game.whitePlayer?.rating : game.blackPlayer?.rating) || user?.rating;
+
+                let oppName = isWhite ? game.blackPlayer?.username : game.whitePlayer?.username;
+                if (game.vsAI) oppName = game.aiPersonaName || "AI";
+                else if (!oppName) oppName = "Unknown";
+                
+                let oppRating = isWhite ? game.blackRatingAtGame : game.whiteRatingAtGame;
+                oppRating = oppRating || (isWhite ? game.blackPlayer?.rating : game.whitePlayer?.rating);
                 
                 let resultClass = 'text-secondary';
                 let resultText = 'Draw';
@@ -236,7 +246,10 @@ export default function Profile() {
 
                 return (
                   <tr key={game.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    <td style={{ padding: '1rem', fontWeight: 'bold' }}>vs {opponent}</td>
+                    <td style={{ padding: '1rem', fontWeight: 'bold' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>You ({myRating}) vs </span> 
+                      {oppRating ? `${oppName} (${oppRating})` : oppName}
+                    </td>
                     <td style={{ padding: '1rem', fontWeight: 'bold' }}>
                       <span style={{ color: resultClass === 'text-success' ? '#10b981' : resultClass === 'text-danger' ? '#ef4444' : 'var(--text-secondary)' }}>
                         {resultText}

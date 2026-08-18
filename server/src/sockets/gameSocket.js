@@ -166,15 +166,21 @@ module.exports = (io, socket) => {
     }
 
     // Persist move
-    await prisma.move.create({
-      data: {
-        gameId,
-        moveNumber: game.chess.history().length,
-        san: moveResult.san,
-        fenAfter: game.chess.fen(),
-        playerColor: game.chess.turn() === 'b' ? 'white' : 'black' // color who just moved
-      }
-    });
+    try {
+      await prisma.move.create({
+        data: {
+          gameId,
+          moveNumber: game.chess.history().length,
+          san: moveResult.san,
+          fenAfter: game.chess.fen(),
+          playerColor: game.chess.turn() === 'b' ? 'white' : 'black' // color who just moved
+        }
+      });
+      console.log(`[endTurn] Move saved to DB for game ${gameId}`);
+    } catch (dbErr) {
+      console.error(`[endTurn] Failed to save move to DB:`, dbErr);
+      // Do not throw; allow the game to continue in memory even if DB fails
+    }
 
     // Check game over
     if (game.chess.isGameOver()) {
@@ -249,16 +255,21 @@ module.exports = (io, socket) => {
   });
 
   socket.on('make_move', async ({ gameId, userId, move }) => {
+    console.log(`[make_move] Received move from ${userId} for game ${gameId}: ${move}`);
     try {
       const game = getActiveGame(gameId);
+      console.log(`[make_move] Active game found, turn: ${game.chess.turn()}, whiteId: ${game.whiteId}, blackId: ${game.blackId}`);
       
       // Verify turn authorization
       const isWhiteTurn = game.chess.turn() === 'w';
       const authorizedUserId = isWhiteTurn ? game.whiteId : game.blackId;
       
       if (userId !== authorizedUserId) {
+        console.error(`[make_move] Turn auth failed! userId: ${userId} (${typeof userId}), authorizedUserId: ${authorizedUserId} (${typeof authorizedUserId})`);
         throw new Error('Not your turn');
       }
+      
+      console.log(`[make_move] Turn auth passed.`);
 
       // Calculate time before making the move
       calculateTime(game);
@@ -271,8 +282,14 @@ module.exports = (io, socket) => {
       }
 
       // Validate and apply move
+      console.log(`[make_move] Applying move: ${move}`);
       const moveResult = game.chess.move(move);
-      if (!moveResult) throw new Error('Invalid move');
+      if (!moveResult) {
+        console.error(`[make_move] Invalid move!`);
+        throw new Error('Invalid move');
+      }
+      
+      console.log(`[make_move] Move applied successfully.`);
 
       game.lastMoveTime = Date.now();
 
@@ -294,8 +311,10 @@ module.exports = (io, socket) => {
       });
 
       const isGameOver = await endTurn(gameId, game, moveResult);
+      console.log(`[make_move] endTurn completed. isGameOver: ${isGameOver}, vsAI: ${game.vsAI}`);
 
       if (!isGameOver && game.vsAI) {
+        console.log(`[make_move] Triggering AI move...`);
         // Trigger AI move
         setTimeout(async () => {
           try {
@@ -314,6 +333,7 @@ module.exports = (io, socket) => {
             });
             
             await endTurn(gameId, aiGame, aiMoveResult);
+            console.log(`[make_move] AI move completed.`);
           } catch (e) {
             console.error('AI Move Error:', e);
           }
@@ -396,6 +416,7 @@ module.exports = (io, socket) => {
         const newGame = await gameService.createAIGame(
           userId, 
           gameRecord.aiDifficulty, 
+          gameRecord.aiPersonaName,
           gameRecord.timeControlSec, 
           gameRecord.incrementSec,
           gameRecord.whiteId === userId ? 'black' : 'white' // swap colors

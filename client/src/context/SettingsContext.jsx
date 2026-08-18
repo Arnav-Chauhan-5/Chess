@@ -8,6 +8,7 @@ const defaultSettings = {
   showCoordinates: true,
   friendRequestAlerts: true,
   challengeAlerts: true,
+  moveInputStyle: 'both',
 };
 
 const SettingsContext = createContext();
