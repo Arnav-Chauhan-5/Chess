@@ -11,6 +11,8 @@ const registerFriendHandlers = require('./sockets/friendSocket');
 const socketStore = require('./sockets/socketStore');
 const friendService = require('./services/friendService');
 
+const cookieParser = require('cookie-parser');
+
 const app = express();
 const server = http.createServer(app);
 
@@ -20,6 +22,7 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+app.use(cookieParser());
 app.use(passport.initialize());
 
 const io = new Server(server, {

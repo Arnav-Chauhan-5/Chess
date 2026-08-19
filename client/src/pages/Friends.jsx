@@ -12,6 +12,7 @@ export default function Friends() {
   const [searchUsername, setSearchUsername] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [challengeStatus, setChallengeStatus] = useState({ type: '', message: '' });
 
   const fetchFriends = async () => {
     try {
@@ -88,7 +89,8 @@ export default function Friends() {
 
   const handleChallenge = (friend) => {
     if (!friend.isOnline) {
-      alert(`${friend.username} is offline.`);
+      setChallengeStatus({ type: 'error', message: `${friend.username} is offline.` });
+      setTimeout(() => setChallengeStatus({ type: '', message: '' }), 3000);
       return;
     }
     
@@ -103,7 +105,8 @@ export default function Friends() {
       timeControlSec,
       incrementSec
     });
-    alert(`Challenge sent to ${friend.username}!`);
+    setChallengeStatus({ type: 'success', message: `Challenge sent to ${friend.username}!` });
+    setTimeout(() => setChallengeStatus({ type: '', message: '' }), 3000);
   };
 
   return (
@@ -118,6 +121,12 @@ export default function Friends() {
         <div className="glass-panel">
           <h2 style={{ marginTop: 0, fontSize: '1.25rem', marginBottom: '1rem' }}>My Friends</h2>
           
+          {challengeStatus.message && (
+            <div style={{ marginBottom: '1rem', padding: '0.75rem', borderRadius: '4px', textAlign: 'center', background: challengeStatus.type === 'error' ? 'var(--danger)' : '#10b981', color: 'white', fontSize: '0.9rem' }}>
+              {challengeStatus.message}
+            </div>
+          )}
+
           {friends.length === 0 ? (
             <p style={{ color: 'var(--text-secondary)' }}>You haven't added any friends yet.</p>
           ) : (

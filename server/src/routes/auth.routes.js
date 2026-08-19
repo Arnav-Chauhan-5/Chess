@@ -43,6 +43,26 @@ router.post('/login', async (req, res) => {
   }
 });
 
+router.get('/me', async (req, res) => {
+  try {
+    const token = req.cookies.refreshToken;
+    if (!token) return res.status(401).json({ error: 'Not authenticated' });
+    
+    const jwt = require('jsonwebtoken');
+    const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'super-refresh-secret-for-dev-only';
+    const payload = jwt.verify(token, JWT_REFRESH_SECRET);
+    
+    const prisma = require('../db');
+    const user = await prisma.user.findUnique({ where: { id: payload.id } });
+    if (!user) return res.status(401).json({ error: 'User not found' });
+    
+    const tokens = authService.generateTokens(user);
+    setCookiesAndRespond(res, tokens);
+  } catch (error) {
+    res.status(401).json({ error: 'Invalid or expired token' });
+  }
+});
+
 router.post('/logout', (req, res) => {
   res.clearCookie('refreshToken');
   res.json({ message: 'Logged out' });

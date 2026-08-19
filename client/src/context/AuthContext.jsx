@@ -8,29 +8,41 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if token exists in URL (e.g., after OAuth redirect)
-    const params = new URLSearchParams(window.location.search);
-    const tokenFromUrl = params.get('token');
-    
-    if (tokenFromUrl) {
-      setToken(tokenFromUrl);
-      // In a real app, you'd decode the JWT to get the user or fetch /me endpoint
-      // For now, we'll mock the user extraction from a simplistic JWT payload
-      try {
-        const payload = JSON.parse(atob(tokenFromUrl.split('.')[1]));
-        setUser({ id: payload.id, username: payload.username });
-      } catch (e) {
-        console.error("Invalid token format");
-      }
+    const restoreSession = async () => {
+      // Check if token exists in URL (e.g., after OAuth redirect)
+      const params = new URLSearchParams(window.location.search);
+      const tokenFromUrl = params.get('token');
       
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } else {
-      // Typically we'd check for a token in localStorage or just rely on HttpOnly cookie
-      // If relying on HttpOnly cookie, we'd make a request to a /me endpoint here.
-    }
-    
-    setLoading(false);
+      if (tokenFromUrl) {
+        setToken(tokenFromUrl);
+        try {
+          const payload = JSON.parse(atob(tokenFromUrl.split('.')[1]));
+          setUser({ id: payload.id, username: payload.username });
+        } catch (e) {
+          console.error("Invalid token format");
+        }
+        
+        window.history.replaceState({}, document.title, window.location.pathname);
+        setLoading(false);
+      } else {
+        try {
+          const res = await fetch('http://localhost:3000/auth/me', {
+            credentials: 'include'
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setToken(data.accessToken);
+            setUser(data.user);
+          }
+        } catch (e) {
+          console.error("Failed to restore session", e);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    restoreSession();
   }, []);
 
   const login = async (email, password) => {

@@ -58,6 +58,7 @@ export default function Lobby() {
   const [searchUsername, setSearchUsername] = useState('');
   const [searchResult, setSearchResult] = useState(null);
   const [searchError, setSearchError] = useState('');
+  const [statusMessage, setStatusMessage] = useState('');
   const [onlineCount, setOnlineCount] = useState(0);
 
   useEffect(() => {
@@ -180,7 +181,7 @@ export default function Lobby() {
   };
 
   const handleJoinQueue = (preset) => {
-    if (!user) return alert('Please login first');
+    if (!user) return navigate('/login');
     setSelectedPreset(preset.label);
     socket.emit('join_queue', { userId: user.id, username: user.username, rating: user.rating || 1200, preset: preset.label });
   };
@@ -190,7 +191,7 @@ export default function Lobby() {
   };
 
   const handleCreateRoom = () => {
-    if (!user) return alert('Please login first');
+    if (!user) return navigate('/login');
     socket.emit('create_room', { 
       userId: user.id, 
       username: user.username,
@@ -200,7 +201,7 @@ export default function Lobby() {
   };
 
   const handleJoinRoom = () => {
-    if (!user) return alert('Please login first');
+    if (!user) return navigate('/login');
     if (!roomId) return;
     socket.emit('join_room', { roomId, userId: user.id });
   };
@@ -212,7 +213,7 @@ export default function Lobby() {
   };
 
   const handleAcceptSeek = (seek) => {
-    if (!user) return alert('Please login first');
+    if (!user) return navigate('/login');
     if (seek.type === 'queue') {
       socket.emit('accept_seek', { 
         targetUserId: seek.userId, 
@@ -227,7 +228,7 @@ export default function Lobby() {
   };
 
   const handleStartAIGame = (bot, preferredColor) => {
-    if (!user) return alert('Please login first');
+    if (!user) return navigate('/login');
     const [minStr, incStr] = aiTimePreset.split('+');
     const timeControlSec = parseInt(minStr) * 60;
     const incrementSec = parseInt(incStr);
@@ -254,7 +255,8 @@ export default function Lobby() {
       timeControlSec,
       incrementSec
     });
-    alert(`Challenge sent to ${friend.username}!`);
+    setStatusMessage(`Challenge sent to ${friend.username}!`);
+    setTimeout(() => setStatusMessage(''), 3000);
     setSelectedFriend(null);
   };
 
@@ -639,6 +641,12 @@ export default function Lobby() {
                     </button>
                   ))}
                 </div>
+
+                {statusMessage && (
+                  <div style={{ background: '#10b981', color: 'white', padding: '0.75rem', borderRadius: '4px', fontSize: '0.9rem', textAlign: 'center' }}>
+                    {statusMessage}
+                  </div>
+                )}
 
                 {/* Sub-tab Content */}
                 <div style={{ minHeight: '180px' }}>

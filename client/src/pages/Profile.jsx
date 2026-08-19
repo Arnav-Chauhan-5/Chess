@@ -12,6 +12,7 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [editUsername, setEditUsername] = useState('');
   const [editError, setEditError] = useState('');
+  const [unlinkError, setUnlinkError] = useState('');
 
   const fetchProfile = async () => {
     try {
@@ -56,6 +57,7 @@ export default function Profile() {
   };
 
   const handleUnlink = async (provider) => {
+    setUnlinkError('');
     try {
       const res = await fetch(`http://localhost:3000/users/oauth/${provider}?userId=${user.id}`, {
         method: 'DELETE'
@@ -64,10 +66,10 @@ export default function Profile() {
       if (res.ok) {
         fetchProfile(); // Refresh to get updated accounts list
       } else {
-        alert(data.error || 'Failed to unlink account');
+        setUnlinkError(data.error || 'Failed to unlink account');
       }
     } catch (err) {
-      alert('Network error while unlinking');
+      setUnlinkError('Network error while unlinking');
     }
   };
 
@@ -156,6 +158,8 @@ export default function Profile() {
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', fontSize: '1.25rem' }}>
             <LinkIcon size={20} color="var(--accent-color)" /> Linked Accounts
           </h3>
+          
+          {unlinkError && <div style={{ color: '#ef4444', fontSize: '0.9rem', marginBottom: '1rem' }}>{unlinkError}</div>}
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {profileUser.oauthAccounts?.length > 0 ? (

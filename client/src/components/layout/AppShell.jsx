@@ -18,6 +18,7 @@ export default function AppShell({ children }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [incomingChallenge, setIncomingChallenge] = useState(null);
   const [notifications, setNotifications] = useState([]);
+  const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
     if (!user || !token) return;
@@ -55,7 +56,8 @@ export default function AppShell({ children }) {
     });
 
     socket.on('friend_challenge_declined', (data) => {
-      alert(`Challenge declined.`);
+      setToastMessage('Challenge declined.');
+      setTimeout(() => setToastMessage(''), 3000);
     });
 
     socket.on('game_started', (data) => {
@@ -423,6 +425,25 @@ export default function AppShell({ children }) {
                   Decline
                 </button>
               </div>
+            </div>
+          )}
+          {toastMessage && (
+            <div style={{
+              position: 'absolute',
+              top: '1rem',
+              right: '2rem',
+              background: 'var(--surface-1)',
+              border: '1px solid var(--border-color)',
+              borderLeft: '4px solid var(--accent-color)',
+              padding: '1rem',
+              borderRadius: '8px',
+              zIndex: 50,
+              boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              animation: 'fadeIn 0.3s ease'
+            }}>
+              <span style={{ fontWeight: 'bold' }}>{toastMessage}</span>
             </div>
           )}
           <Outlet />
