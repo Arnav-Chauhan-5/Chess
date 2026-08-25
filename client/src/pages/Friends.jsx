@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../hooks/useSocket';
-import { Users, UserPlus, Check, X, Swords } from 'lucide-react';
+import { Users, UserPlus, Check, X, Swords, Clock } from 'lucide-react';
 
 export default function Friends() {
   const { user, token } = useAuth();
   const { socket } = useSocket();
+  const navigate = useNavigate();
   const [friends, setFriends] = useState([]);
   const [incoming, setIncoming] = useState([]);
   const [outgoing, setOutgoing] = useState([]);
@@ -13,8 +15,10 @@ export default function Friends() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [challengeStatus, setChallengeStatus] = useState({ type: '', message: '' });
+  const [pendingChallengeToId, setPendingChallengeToId] = useState(null); // id of friend we challenged
 
   const fetchFriends = async () => {
+    if (!user?.id || !token) return;
     try {
       const res = await fetch(`http://localhost:3000/friends/${user.id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -35,21 +39,68 @@ export default function Friends() {
 
     if (!socket) return;
 
+    // Re-fetch once our socket confirms it's connected and registered server-side.
+    // This ensures the online flags reflect the presence store, which is populated
+    // only after the socket handshake auth middleware runs.
+    const onConnect = () => {
+      fetchFriends();
+    };
+
+    // Live status updates pushed by the server when a friend connects/disconnects
     const onStatusChanged = ({ userId, isOnline }) => {
       setFriends(prev => prev.map(f => f.id === userId ? { ...f, isOnline } : f));
     };
 
+    if (socket.connected) {
+      // Already connected when this effect runs — fetch immediately
+      fetchFriends();
+    }
+
+    socket.on('connect', onConnect);
     socket.on('friend_status_changed', onStatusChanged);
 
-    return () => {
-      socket.off('friend_status_changed', onStatusChanged);
+    // Server error (e.g. duplicate challenge, friend offline)
+    const onSocketError = ({ message }) => {
+      setChallengeStatus({ type: 'error', message });
+      setPendingChallengeToId(null);
+      setTimeout(() => setChallengeStatus({ type: '', message: '' }), 4000);
     };
-  }, [user, socket]);
+    socket.on('error', onSocketError);
+
+    // When the game starts (accepted challenge), navigate into the room
+    const onGameStarted = ({ gameId }) => {
+      setPendingChallengeToId(null);
+      navigate(`/game/${gameId}`);
+    };
+    socket.on('game_started', onGameStarted);
+
+    // Challenger is notified when declined
+    const onDeclined = ({ byUsername }) => {
+      setPendingChallengeToId(null);
+      setChallengeStatus({ type: 'error', message: `${byUsername || 'Friend'} declined your challenge.` });
+      setTimeout(() => setChallengeStatus({ type: '', message: '' }), 4000);
+    };
+    socket.on('friend_challenge_declined', onDeclined);
+
+    return () => {
+      socket.off('connect', onConnect);
+      socket.off('friend_status_changed', onStatusChanged);
+      socket.off('error', onSocketError);
+      socket.off('game_started', onGameStarted);
+      socket.off('friend_challenge_declined', onDeclined);
+    };
+  }, [user, token, socket]);
 
   const sendRequest = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+    
+    if (searchUsername.trim().toLowerCase() === user.username.toLowerCase()) {
+      setError("You cannot friend yourself");
+      return;
+    }
+    
     try {
       const res = await fetch('http://localhost:3000/friends/request', {
         method: 'POST',
@@ -93,8 +144,12 @@ export default function Friends() {
       setTimeout(() => setChallengeStatus({ type: '', message: '' }), 3000);
       return;
     }
+    if (pendingChallengeToId) {
+      setChallengeStatus({ type: 'error', message: 'You already have a pending challenge.' });
+      setTimeout(() => setChallengeStatus({ type: '', message: '' }), 3000);
+      return;
+    }
     
-    // Quick challenge 5+0 for simplicity, or we can prompt for time control
     const timeControlSec = 300;
     const incrementSec = 0;
     
@@ -105,8 +160,8 @@ export default function Friends() {
       timeControlSec,
       incrementSec
     });
-    setChallengeStatus({ type: 'success', message: `Challenge sent to ${friend.username}!` });
-    setTimeout(() => setChallengeStatus({ type: '', message: '' }), 3000);
+    setPendingChallengeToId(friend.id);
+    setChallengeStatus({ type: 'success', message: `Challenge sent to ${friend.username}! Waiting for response...` });
   };
 
   return (
@@ -153,18 +208,28 @@ export default function Friends() {
                       <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Rating: {f.rating}</div>
                     </div>
                   </div>
-                  <button 
-                    onClick={() => handleChallenge(f)}
-                    disabled={!f.isOnline}
-                    className="btn"
-                    style={{
-                      opacity: f.isOnline ? 1 : 0.5,
-                      height: 'auto',
-                      padding: '0.5rem 1rem'
-                    }}
-                  >
-                    <Swords size={16} /> Challenge
-                  </button>
+                  {(() => {
+                    const isPending = pendingChallengeToId === f.id;
+                    const isDisabled = !f.isOnline || isPending || (pendingChallengeToId && pendingChallengeToId !== f.id);
+                    return (
+                      <button 
+                        onClick={() => handleChallenge(f)}
+                        disabled={isDisabled}
+                        className="btn"
+                        style={{
+                          opacity: isDisabled ? 0.5 : 1,
+                          height: 'auto',
+                          padding: '0.5rem 1rem',
+                          minWidth: '120px'
+                        }}
+                      >
+                        {isPending
+                          ? <><Clock size={16} /> Waiting...</>
+                          : <><Swords size={16} /> Challenge</>
+                        }
+                      </button>
+                    );
+                  })()}
                 </div>
               ))}
             </div>

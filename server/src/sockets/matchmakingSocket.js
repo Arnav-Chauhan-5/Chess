@@ -23,7 +23,8 @@ module.exports = (io, socket) => {
           whiteId, 
           blackId, 
           result.timeControlSec, 
-          result.incrementSec
+          result.incrementSec,
+          false // isCasual = false (Rated)
         );
 
         io.to(p1.socketId).emit('match_found', { gameId: game.id, color: isP1White ? 'white' : 'black' });
@@ -86,7 +87,7 @@ module.exports = (io, socket) => {
       const whiteId = isP1White ? p1.userId : p2.userId;
       const blackId = isP1White ? p2.userId : p1.userId;
       
-      const game = await gameService.createPvPGame(whiteId, blackId, timeControlSec, incrementSec);
+      const game = await gameService.createPvPGame(whiteId, blackId, timeControlSec, incrementSec, false); // isCasual = false (Rated)
 
       io.to(p1.socketId).emit('match_found', { gameId: game.id, color: isP1White ? 'white' : 'black' });
       io.to(p2.socketId).emit('match_found', { gameId: game.id, color: isP1White ? 'black' : 'white' });

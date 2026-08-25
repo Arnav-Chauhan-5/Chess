@@ -66,6 +66,7 @@ export default function Lobby() {
 
     socket.emit('get_seeks');
     socket.emit('get_live_games');
+    socket.emit('get_online_count');
 
     // Fetch user profile stats
     if (user) {
@@ -171,7 +172,9 @@ export default function Lobby() {
     setSearchError('');
     setSearchResult(null);
     try {
-      const res = await fetch(`http://localhost:3000/users/search?username=${encodeURIComponent(searchUsername.trim())}`);
+      const res = await fetch(`http://localhost:3000/users/search?username=${encodeURIComponent(searchUsername.trim())}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setSearchResult(data.user);
@@ -362,6 +365,7 @@ export default function Lobby() {
               // Calculate delta over recentGames
               let ratingDelta = 0;
               let currentStreak = 0;
+              let streakType = null; // 'W', 'L', or 'D'
               let streakBroken = false;
               
               recentGames.forEach(game => {
@@ -373,7 +377,15 @@ export default function Lobby() {
                 // Calculate streak
                 if (!streakBroken) {
                   const won = (isWhite && game.status === 'WHITE_WON') || (!isWhite && game.status === 'BLACK_WON');
-                  if (won) {
+                  const lost = (isWhite && game.status === 'BLACK_WON') || (!isWhite && game.status === 'WHITE_WON');
+                  const draw = game.status === 'DRAW' || game.status === 'ABORTED';
+                  
+                  let result = won ? 'W' : lost ? 'L' : 'D';
+
+                  if (streakType === null) {
+                    streakType = result;
+                    currentStreak = 1;
+                  } else if (streakType === result) {
                     currentStreak++;
                   } else {
                     streakBroken = true;
@@ -409,8 +421,8 @@ export default function Lobby() {
                   <div style={{ display: 'flex', gap: '1rem' }}>
                     <div className="surface-2" style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                       <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.25rem' }}>Current Streak</div>
-                      <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: currentStreak >= 3 ? '#f59e0b' : 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        {currentStreak >= 3 && <Flame size={16} />} {currentStreak} W
+                      <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: streakType === 'W' && currentStreak >= 3 ? '#f59e0b' : streakType === 'L' && currentStreak >= 3 ? '#ef4444' : 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        {streakType === 'W' && currentStreak >= 3 && <Flame size={16} />} {currentStreak} {streakType || 'W'}
                       </div>
                     </div>
                     

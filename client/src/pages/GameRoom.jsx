@@ -85,6 +85,10 @@ export default function GameRoom() {
       setIsCasual(data.isCasual ?? true);
     });
 
+    socket.on('error', (err) => {
+      console.error('[Socket Error from Server]:', err.message);
+    });
+
     socket.on('opponent_moved', (data) => {
       gameRef.current.move(data.move);
       setFen(gameRef.current.fen());
@@ -493,6 +497,7 @@ export default function GameRoom() {
 
   // Fix 3: Resign with confirmation
   const handleResign = useCallback(() => {
+    console.log('[handleResign] Client emitting resign for gameId:', gameId, 'userId:', user?.id, 'connected:', socket.connected, 'socketId:', socket.id);
     socket.emit('resign', { gameId, userId: user?.id });
     setShowResignConfirm(false);
   }, [socket, gameId, user]);
@@ -772,7 +777,8 @@ export default function GameRoom() {
             }}>
               <span style={{ fontSize: '0.8rem', color: '#fca5a5', flex: 1, textAlign: 'center' }}>Resign?</span>
               <button 
-                onClick={handleResign} 
+                onClick={() => { console.log('YES clicked'); handleResign(); }} 
+
                 className="btn" 
                 style={{ background: '#ef4444', padding: '0.4rem 0.75rem', fontSize: '0.8rem' }}
               >Yes</button>
@@ -784,7 +790,8 @@ export default function GameRoom() {
             </div>
           ) : (
             <button 
-              onClick={() => settings.confirmResign ? setShowResignConfirm(true) : handleResign()} 
+              onClick={() => { console.log('RESIGN clicked, confirmResign:', settings.confirmResign); settings.confirmResign ? setShowResignConfirm(true) : handleResign(); }} 
+
               className="btn" 
               style={{ flex: 1, background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)' }}
             >Resign</button>

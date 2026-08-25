@@ -63,6 +63,10 @@ class FriendService {
       throw new Error('Request not found');
     }
 
+    if (friendship.requesterId === friendship.addresseeId) {
+      throw new Error('Self-referencing friendships are not allowed');
+    }
+
     if (friendship.addresseeId !== addresseeId) {
       throw new Error('Unauthorized');
     }
@@ -89,8 +93,8 @@ class FriendService {
         ]
       },
       include: {
-        requester: { select: { id: true, username: true, rating: true, avatarUrl: true } },
-        addressee: { select: { id: true, username: true, rating: true, avatarUrl: true } }
+        requester: { select: { id: true, username: true, rating: true, avatarUrl: true, showOnlineStatus: true } },
+        addressee: { select: { id: true, username: true, rating: true, avatarUrl: true, showOnlineStatus: true } }
       }
     });
 
@@ -101,10 +105,12 @@ class FriendService {
     for (const f of friendships) {
       if (f.status === 'ACCEPTED') {
         const friendUser = f.requesterId === userId ? f.addressee : f.requester;
-        const isOnline = friendUser.showOnlineStatus ? socketStore.isOnline(friendUser.id) : false;
+        const { showOnlineStatus, ...friendData } = friendUser;
+        const rawOnline = socketStore.isOnline(friendUser.id);
+        const isOnline = showOnlineStatus !== false ? rawOnline : false;
         accepted.push({
           friendshipId: f.id,
-          ...friendUser,
+          ...friendData,
           isOnline
         });
       } else if (f.status === 'PENDING') {

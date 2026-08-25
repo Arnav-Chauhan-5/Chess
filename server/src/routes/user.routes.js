@@ -1,5 +1,6 @@
 const express = require('express');
 const prisma = require('../db');
+const { isAuthenticated } = require('../middleware/auth.middleware');
 
 const router = express.Router();
 
@@ -17,7 +18,7 @@ router.get('/leaderboard', async (req, res) => {
   }
 });
 
-router.get('/search', async (req, res) => {
+router.get('/search', isAuthenticated, async (req, res) => {
   try {
     const { username } = req.query;
     if (!username) return res.status(400).json({ error: 'username query is required' });
@@ -26,6 +27,9 @@ router.get('/search', async (req, res) => {
       select: { id: true, username: true, rating: true, showOnlineStatus: true }
     });
     if (!user) return res.status(404).json({ error: 'User not found' });
+    if (user.id === req.user.id) {
+      return res.status(400).json({ error: 'You cannot search for yourself here' });
+    }
     res.json({ user });
   } catch (err) {
     res.status(500).json({ error: 'Search failed' });

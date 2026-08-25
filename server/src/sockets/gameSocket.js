@@ -24,9 +24,11 @@ function stopClockCheck(gameId) {
 
 // Extracted game finalization logic to handle DB update, rating calculation, and emit
 async function finalizeGame(io, gameId, game, status, reason) {
+  console.log(`[finalizeGame] Started for gameId: ${gameId}, status: ${status}, reason: ${reason}`);
   let whiteDelta = null;
   let blackDelta = null;
   let pgn = game.chess.pgn();
+  console.log(`[finalizeGame] PGN generated.`);
 
   // Elo rating calculation (only for non-casual PvP games)
   if (!game.isCasual && !game.vsAI && game.whiteId && game.blackId) {
@@ -66,6 +68,7 @@ async function finalizeGame(io, gameId, game, status, reason) {
     }
   }
 
+  console.log(`[finalizeGame] Preparing to persist to DB. isCasual: ${game.isCasual}, whiteDelta: ${whiteDelta}, blackDelta: ${blackDelta}`);
   try {
     await prisma.game.update({
       where: { id: gameId },
@@ -78,8 +81,12 @@ async function finalizeGame(io, gameId, game, status, reason) {
         blackRatingDelta: blackDelta
       }
     });
-  } catch (e) { console.error('Game finalize persist error:', e); }
+    console.log(`[finalizeGame] DB persistence successful.`);
+  } catch (e) { 
+    console.error(`[finalizeGame] Game finalize persist error:`, e); 
+  }
 
+  console.log(`[finalizeGame] Emitting game_over to room game_${gameId}`);
   io.to(`game_${gameId}`).emit('game_over', { 
     reason, 
     status, 
@@ -355,6 +362,7 @@ module.exports = (io, socket) => {
   });
 
   socket.on('resign', async ({ gameId, userId }) => {
+    console.log('[Server] Received resign event for gameId:', gameId, 'userId:', userId);
     try {
       const game = getActiveGame(gameId);
       const isWhite = userId === game.whiteId;

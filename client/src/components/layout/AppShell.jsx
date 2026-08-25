@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../hooks/useSocket';
+import { useOutsideClick } from '../../hooks/useOutsideClick';
 import { useSettings } from '../../context/SettingsContext';
 import { Play, Trophy, History, User as UserIcon, Settings, LogOut, Menu, X, ChevronDown, Eye, Users, Bell, BookOpen } from 'lucide-react';
 
@@ -16,9 +17,14 @@ export default function AppShell({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  
+  const notificationsRef = useOutsideClick(() => setNotificationsOpen(false));
+  const userDropdownRef = useOutsideClick(() => setDropdownOpen(false));
   const [incomingChallenge, setIncomingChallenge] = useState(null);
+  const [pendingChallenge, setPendingChallenge] = useState(null); // challenger waiting state
   const [notifications, setNotifications] = useState([]);
   const [toastMessage, setToastMessage] = useState('');
+  const challengeTimerRef = useRef(null);
 
   useEffect(() => {
     if (!user || !token) return;
@@ -40,30 +46,40 @@ export default function AppShell({ children }) {
   useEffect(() => {
     if (!socket || !user) return;
     
-    // Register user for online status and direct events
-    socket.emit('register_user', { userId: user.id });
+    // Note: user registration into the presence store now happens server-side
+    // at socket handshake time (via the JWT auth middleware), so no manual
+    // register_user emit is needed here.
 
     socket.on('online_count', (count) => {
       setOnlineCount(count);
     });
 
     socket.on('friend_challenge_received', (data) => {
-      // Gate the toast behind the setting.
-      // Even if false, the state is synced elsewhere, just no toast here.
       if (settings.challengeAlerts) {
+        // Clear any existing expiry timer
+        if (challengeTimerRef.current) clearTimeout(challengeTimerRef.current);
         setIncomingChallenge(data);
+        // Auto-expire after 60 seconds
+        challengeTimerRef.current = setTimeout(() => {
+          setIncomingChallenge(null);
+          challengeTimerRef.current = null;
+        }, 60000);
       }
     });
 
     socket.on('friend_challenge_declined', (data) => {
-      setToastMessage('Challenge declined.');
-      setTimeout(() => setToastMessage(''), 3000);
+      setPendingChallenge(null);
+      setToastMessage(data.byUsername ? `${data.byUsername} declined your challenge.` : 'Challenge declined.');
+      setTimeout(() => setToastMessage(''), 4000);
     });
 
     socket.on('game_started', (data) => {
-      // If we are anywhere and a game starts (like from a challenge), navigate
-      // Only navigate if it's our game (we just accepted or got accepted)
       setIncomingChallenge(null);
+      setPendingChallenge(null);
+      if (challengeTimerRef.current) {
+        clearTimeout(challengeTimerRef.current);
+        challengeTimerRef.current = null;
+      }
       navigate(`/game/${data.gameId}`);
     });
 
@@ -87,6 +103,11 @@ export default function AppShell({ children }) {
 
   const handleRespondChallenge = (accept) => {
     if (!incomingChallenge) return;
+    // Clear the auto-expiry timer
+    if (challengeTimerRef.current) {
+      clearTimeout(challengeTimerRef.current);
+      challengeTimerRef.current = null;
+    }
     socket.emit('respond_friend_challenge', {
       fromUserId: incomingChallenge.fromUserId,
       toUserId: user.id,
@@ -113,12 +134,26 @@ export default function AppShell({ children }) {
       }
     }
 
-    // Navigate
+    // Navigate / restore challenge modal
     if (notification.type === 'FRIEND_REQUEST') {
       navigate('/friends');
     } else if (notification.type === 'CHALLENGE' || notification.type === 'GAME_INVITE') {
-      // For a challenge, we might just navigate to friends where they can accept it
-      navigate('/friends');
+      // Reconstruct the challenge modal from the notification data
+      // so the user can Accept/Decline even if they dismissed the original toast
+      if (notification.data?.fromUserId) {
+        if (challengeTimerRef.current) clearTimeout(challengeTimerRef.current);
+        setIncomingChallenge({
+          fromUserId: notification.data.fromUserId,
+          fromUsername: notification.data.fromUsername,
+          timeControlSec: notification.data.timeControlSec,
+          incrementSec: notification.data.incrementSec,
+        });
+        challengeTimerRef.current = setTimeout(() => {
+          setIncomingChallenge(null);
+          challengeTimerRef.current = null;
+        }, 60000);
+      }
+
     } else if (notification.type === 'DRAW_OFFER') {
       if (notification.data?.gameId) {
         navigate(`/game/${notification.data.gameId}`);
@@ -226,7 +261,7 @@ export default function AppShell({ children }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
               
               {/* Notification Bell */}
-              <div style={{ position: 'relative' }}>
+              <div style={{ position: 'relative' }} ref={notificationsRef}>
                 <button 
                   onClick={() => { setNotificationsOpen(!notificationsOpen); setDropdownOpen(false); }}
                   style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', position: 'relative' }}
@@ -298,7 +333,7 @@ export default function AppShell({ children }) {
                 )}
               </div>
 
-              <div style={{ position: 'relative' }}>
+              <div style={{ position: 'relative' }} ref={userDropdownRef}>
                 <div 
                   style={{ 
                     display: 'flex', 
@@ -387,68 +422,82 @@ export default function AppShell({ children }) {
           )}
         </header>
 
-        {/* Page Content */}
         <main style={{ flex: 1, position: 'relative' }}>
-          {incomingChallenge && (
-            <div style={{
-              position: 'absolute',
-              top: '1rem',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              background: 'var(--surface-1)',
-              border: '1px solid var(--accent-color)',
-              padding: '1rem',
-              borderRadius: '8px',
-              zIndex: 50,
-              boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1rem'
-            }}>
-              <div>
-                <p style={{ margin: 0, fontWeight: 'bold' }}>Challenge from {incomingChallenge.fromUsername}</p>
-                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                  {incomingChallenge.timeControlSec / 60}+{incomingChallenge.incrementSec}
-                </p>
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button 
-                  onClick={() => handleRespondChallenge(true)}
-                  style={{ background: 'var(--accent-color)', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}
-                >
-                  Accept
-                </button>
-                <button 
-                  onClick={() => handleRespondChallenge(false)}
-                  style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}
-                >
-                  Decline
-                </button>
-              </div>
-            </div>
-          )}
-          {toastMessage && (
-            <div style={{
-              position: 'absolute',
-              top: '1rem',
-              right: '2rem',
-              background: 'var(--surface-1)',
-              border: '1px solid var(--border-color)',
-              borderLeft: '4px solid var(--accent-color)',
-              padding: '1rem',
-              borderRadius: '8px',
-              zIndex: 50,
-              boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
-              display: 'flex',
-              alignItems: 'center',
-              animation: 'fadeIn 0.3s ease'
-            }}>
-              <span style={{ fontWeight: 'bold' }}>{toastMessage}</span>
-            </div>
-          )}
           <Outlet />
         </main>
       </div>
+
+      {/* Challenge incoming modal — position:fixed so it's above ALL stacking contexts */}
+      {incomingChallenge && (
+        <div style={{
+          position: 'fixed',
+          top: '5rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'var(--surface-1)',
+          border: '2px solid var(--accent-color)',
+          padding: '1.25rem 1.5rem',
+          borderRadius: '12px',
+          zIndex: 1000,
+          boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1.5rem',
+          minWidth: '320px',
+          animation: 'challengeSlideIn 0.3s ease'
+        }}>
+          <div>
+            <p style={{ margin: 0, fontWeight: 'bold', fontSize: '1rem' }}>⚔️ Challenge from {incomingChallenge.fromUsername}</p>
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+              {incomingChallenge.timeControlSec / 60}+{incomingChallenge.incrementSec} • 5 minutes to accept
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+            <button 
+              onClick={() => handleRespondChallenge(true)}
+              style={{ 
+                background: 'var(--accent-color)', color: 'white', border: 'none', 
+                padding: '0.6rem 1.25rem', borderRadius: '6px', cursor: 'pointer',
+                fontWeight: 'bold', fontSize: '0.9rem'
+              }}
+            >
+              ✓ Accept
+            </button>
+            <button 
+              onClick={() => handleRespondChallenge(false)}
+              style={{ 
+                background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid var(--border-color)', 
+                padding: '0.6rem 1.25rem', borderRadius: '6px', cursor: 'pointer',
+                fontSize: '0.9rem'
+              }}
+            >
+              ✕ Decline
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* General toast notification — position:fixed top-right */}
+      {toastMessage && (
+        <div style={{
+          position: 'fixed',
+          top: '5rem',
+          right: '2rem',
+          background: 'var(--surface-1)',
+          border: '1px solid var(--border-color)',
+          borderLeft: '4px solid var(--accent-color)',
+          padding: '1rem 1.25rem',
+          borderRadius: '8px',
+          zIndex: 1000,
+          boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          animation: 'fadeIn 0.3s ease',
+          maxWidth: '300px'
+        }}>
+          <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{toastMessage}</span>
+        </div>
+      )}
 
       <style>{`
         @media (max-width: 768px) {
@@ -478,6 +527,10 @@ export default function AppShell({ children }) {
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-10px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes challengeSlideIn {
+          from { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(0.95); }
+          to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
         }
       `}</style>
     </div>

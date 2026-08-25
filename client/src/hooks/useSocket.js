@@ -1,32 +1,56 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
+import { useAuth } from '../context/AuthContext';
 
 const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
+// Module-level singleton — one socket for the whole app lifetime.
 let socketInstance = null;
+let currentToken = null;
 
 export const useSocket = () => {
-  const [socket, setSocket] = useState(socketInstance);
-  const [connected, setConnected] = useState(socketInstance?.connected || false);
+  const { token } = useAuth();
+  
+  // We need to trigger a re-render if the socket is created later,
+  // or if connection state changes.
+  const [_, setTick] = useState(0);
+  const forceUpdate = () => setTick(t => t + 1);
 
   useEffect(() => {
+    if (!token) return;
+
+    if (socketInstance && currentToken !== token) {
+      socketInstance.disconnect();
+      socketInstance = null;
+      currentToken = null;
+    }
+
     if (!socketInstance) {
+      currentToken = token;
       socketInstance = io(SOCKET_URL, {
         withCredentials: true,
-        autoConnect: true
+        autoConnect: true,
+        auth: { token },
       });
-
-      socketInstance.on('connect', () => setConnected(true));
-      socketInstance.on('disconnect', () => setConnected(false));
-      setSocket(socketInstance);
+      
+      socketInstance.on('connect', forceUpdate);
+      socketInstance.on('disconnect', forceUpdate);
+      forceUpdate();
+    } else {
+      // It was already created, but we need to ensure this component
+      // listens to connect/disconnect to re-render if needed.
+      socketInstance.on('connect', forceUpdate);
+      socketInstance.on('disconnect', forceUpdate);
+      forceUpdate();
     }
-    
-    // In React 18 strict mode, this might unmount/remount. We don't want to destroy the socket on unmount
-    // if we are sharing it application-wide. 
-    return () => {
-      // Don't disconnect here if we want a global socket
-    };
-  }, []);
 
-  return { socket, connected };
+    return () => {
+      if (socketInstance) {
+        socketInstance.off('connect', forceUpdate);
+        socketInstance.off('disconnect', forceUpdate);
+      }
+    };
+  }, [token]);
+
+  return { socket: socketInstance, connected: socketInstance?.connected || false };
 };
