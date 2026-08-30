@@ -1,6 +1,7 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { Chess } from 'chess.js';
 import { Chessboard } from 'react-chessboard';
+import { useAuth } from '../context/AuthContext';
 
 // The "Immortal Game" — Anderssen vs Kieseritzky, 1851 (shortened)
 const DEMO_MOVES = [
@@ -18,6 +19,29 @@ export default function DecorativeBoard({ autoplay = true }) {
   const chessRef = useRef(new Chess());
   const [fen, setFen] = useState(chessRef.current.fen());
   const moveIndexRef = useRef(0);
+  const { user } = useAuth();
+  
+  const boardTheme = user?.equippedBoardTheme || {
+    lightSquareColor: '#cbd5e1',
+    darkSquareColor: '#475569'
+  };
+
+  const pieceSetKey = user?.equippedPieceSet?.pieceSetKey || 'cburnett';
+
+  const customPieces = useMemo(() => {
+    const pieces = ['wP', 'wN', 'wB', 'wR', 'wQ', 'wK', 'bP', 'bN', 'bB', 'bR', 'bQ', 'bK'];
+    const pieceComponents = {};
+    pieces.forEach((p) => {
+      pieceComponents[p] = ({ squareWidth }) => (
+        <img
+          src={`/pieces/${pieceSetKey}/${p}.svg`}
+          style={{ width: squareWidth, height: squareWidth }}
+          alt={p}
+        />
+      );
+    });
+    return pieceComponents;
+  }, [pieceSetKey]);
 
   useEffect(() => {
     if (!autoplay) return;
@@ -59,8 +83,9 @@ export default function DecorativeBoard({ autoplay = true }) {
       <Chessboard options={{
         position: fen,
         allowDragging: false,
-        darkSquareStyle: { backgroundColor: '#475569' },
-        lightSquareStyle: { backgroundColor: '#cbd5e1' },
+        darkSquareStyle: { backgroundColor: boardTheme.darkSquareColor },
+        lightSquareStyle: { backgroundColor: boardTheme.lightSquareColor },
+        customPieces,
         animationDuration: autoplay ? 300 : 0
       }} />
     </div>

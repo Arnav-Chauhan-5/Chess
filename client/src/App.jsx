@@ -11,6 +11,7 @@ import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import GameRoom from './pages/GameRoom';
 import Rules from './pages/Rules';
+import Shop from './pages/Shop';
 import { AuthProvider } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
 import AppShell from './components/layout/AppShell';
@@ -37,6 +38,7 @@ function App() {
               <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/rules" element={<Rules />} />
+              <Route path="/shop" element={<Shop />} />
               <Route path="/game/:gameId" element={<GameRoom />} />
             </Route>
           </Routes>

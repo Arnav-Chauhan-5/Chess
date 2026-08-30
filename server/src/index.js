@@ -42,6 +42,7 @@ app.use('/games', require('./routes/game.routes'));
 app.use('/users', require('./routes/user.routes'));
 app.use('/friends', require('./routes/friend.routes'));
 app.use('/notifications', require('./routes/notification.routes'));
+app.use('/cosmetics', require('./routes/cosmetics.routes'));
 
 socketStore.setIo(io);
 
@@ -89,11 +90,15 @@ io.on('connection', async (socket) => {
     const wasOffline = !socketStore.isOnline(userId);
     socketStore.registerUser(socket.id, userId);
 
+    // Join a personal room so we can target this user with io.to('user_<id>')
+    socket.join(`user_${userId}`);
+
     // Only broadcast online transition once (first tab/window)
     if (wasOffline) {
       await friendService.broadcastStatusToFriends(io, userId, true);
     }
   }
+
 
   // Keep the manual register_user handler for backwards compatibility
   // (e.g. unauthenticated sockets that later identify themselves)

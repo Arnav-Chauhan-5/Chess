@@ -170,7 +170,7 @@ module.exports = (io, socket) => {
           } catch (e) {
             console.error('AI opening move error:', e);
           }
-        }, 1500);
+        }, 5500);
       }
     } catch (err) {
       socket.emit('error', { message: err.message });

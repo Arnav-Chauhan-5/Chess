@@ -9,6 +9,7 @@ const defaultSettings = {
   friendRequestAlerts: true,
   challengeAlerts: true,
   moveInputStyle: 'both',
+  theme: 'dark', // 'dark' | 'system'
 };
 
 const SettingsContext = createContext();
@@ -35,9 +36,41 @@ export function SettingsProvider({ children }) {
     return defaultSettings;
   });
 
+  // Persist settings to localStorage
   useEffect(() => {
     localStorage.setItem('chess_settings', JSON.stringify(settings));
   }, [settings]);
+
+  // Apply theme to document body
+  useEffect(() => {
+    const applyTheme = (theme) => {
+      if (theme === 'system') {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.body.dataset.theme = prefersDark ? 'dark' : 'dark'; // Light palette not built yet — keep dark
+      } else {
+        document.body.dataset.theme = theme;
+      }
+    };
+
+    applyTheme(settings.theme);
+
+    // Listen for system preference changes when in 'system' mode
+    let mql = null;
+    const handleSystemChange = (e) => {
+      if (settings.theme === 'system') {
+        document.body.dataset.theme = 'dark'; // Light palette stub — always dark for now
+      }
+    };
+
+    if (settings.theme === 'system') {
+      mql = window.matchMedia('(prefers-color-scheme: dark)');
+      mql.addEventListener('change', handleSystemChange);
+    }
+
+    return () => {
+      if (mql) mql.removeEventListener('change', handleSystemChange);
+    };
+  }, [settings.theme]);
 
   const updateSetting = (key, value) => {
     setSettings(prev => ({ ...prev, [key]: value }));

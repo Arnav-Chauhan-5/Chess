@@ -26,6 +26,28 @@ export default function GameRoom() {
   const { settings } = useSettings();
   const navigate = useNavigate();
 
+  const boardTheme = user?.equippedBoardTheme || {
+    lightSquareColor: '#cbd5e1',
+    darkSquareColor: '#475569'
+  };
+
+  const pieceSetKey = user?.equippedPieceSet?.pieceSetKey || 'cburnett';
+
+  const customPieces = useMemo(() => {
+    const pieces = ['wP', 'wN', 'wB', 'wR', 'wQ', 'wK', 'bP', 'bN', 'bB', 'bR', 'bQ', 'bK'];
+    const pieceComponents = {};
+    pieces.forEach((p) => {
+      pieceComponents[p] = ({ squareWidth }) => (
+        <img
+          src={`/pieces/${pieceSetKey}/${p}.svg`}
+          style={{ width: squareWidth, height: squareWidth }}
+          alt={p}
+        />
+      );
+    });
+    return pieceComponents;
+  }, [pieceSetKey]);
+
   // Use a ref for the mutable Chess instance so it persists across renders
   const gameRef = useRef(new Chess());
   // FEN string state drives the <Chessboard position={...}> prop
@@ -63,6 +85,27 @@ export default function GameRoom() {
   const [whiteRating, setWhiteRating] = useState(1200);
   const [blackRating, setBlackRating] = useState(1200);
 
+  // Pre-game state
+  const [gamePhase, setGamePhase] = useState('WAITING'); // 'WAITING' | 'COUNTDOWN' | 'PLAYING'
+  const [countdownValue, setCountdownValue] = useState(5);
+  // Ref so socket listeners (registered once, stale closure) can always read the *current* phase
+  const gamePhaseRef = useRef('WAITING');
+
+  // Keep the ref in sync with the state value
+  useEffect(() => {
+    gamePhaseRef.current = gamePhase;
+  }, [gamePhase]);
+
+  useEffect(() => {
+    let timer;
+    if (gamePhase === 'COUNTDOWN' && countdownValue > 0) {
+      timer = setTimeout(() => setCountdownValue(prev => prev - 1), 1000);
+    } else if (gamePhase === 'COUNTDOWN' && countdownValue === 0) {
+      setGamePhase('PLAYING');
+    }
+    return () => clearTimeout(timer);
+  }, [gamePhase, countdownValue]);
+
   useEffect(() => {
     if (!socket || !user) return;
 
@@ -83,6 +126,23 @@ export default function GameRoom() {
       else if (data.blackId === user?.id) setPlayerColor('b');
       else setPlayerColor('viewer');
       setIsCasual(data.isCasual ?? true);
+      
+      // Only advance phase — never downgrade it.
+      // A re-sync (e.g. socket reconnect before any move) must NOT reset COUNTDOWN → WAITING.
+      if (data.hasStarted) {
+        setGamePhase('PLAYING');
+      } else if (gamePhaseRef.current === 'WAITING') {
+        setGamePhase('WAITING'); // effective no-op; keeps phase stable
+      }
+      // If already COUNTDOWN or PLAYING, leave it alone.
+    });
+
+    socket.on('players_ready', () => {
+      // Use the ref so we read the *current* phase, not the stale closure value.
+      if (gamePhaseRef.current === 'WAITING') {
+        setGamePhase('COUNTDOWN');
+        setCountdownValue(5);
+      }
     });
 
     socket.on('error', (err) => {
@@ -177,7 +237,7 @@ export default function GameRoom() {
 
   // Very basic clock tick effect
   useEffect(() => {
-    if (isGameOver) return;
+    if (isGameOver || gamePhase !== 'PLAYING' || gameRef.current.history().length === 0) return;
     const interval = setInterval(() => {
       if (gameRef.current.turn() === 'w') {
         setWhiteTime(t => Math.max(0, t - 100));
@@ -186,7 +246,7 @@ export default function GameRoom() {
       }
     }, 100);
     return () => clearInterval(interval);
-  }, [fen, isGameOver]);
+  }, [fen, isGameOver, gamePhase]);
 
   const prevHistoryLengthRef = useRef(0);
 
@@ -298,6 +358,9 @@ export default function GameRoom() {
   };
 
   const getMoveOptions = useCallback((square) => {
+    // Use the ref so the memoized callback always reads the current phase,
+    // not the stale 'WAITING' value captured when this callback was first created.
+    if (gamePhaseRef.current !== 'PLAYING') return;
     const chess = gameRef.current;
     
     if (chess.turn() !== playerColor) {
@@ -327,13 +390,19 @@ export default function GameRoom() {
     const newSquares = {};
     if (settings.showLegalMoves) {
       moves.forEach((move) => {
-        const isCapture = chess.get(move.to) !== null;
-        newSquares[move.to] = {
-          backgroundImage: isCapture
-            ? 'radial-gradient(circle, transparent 75%, rgba(0,0,0,.2) 75%)'
-            : 'radial-gradient(circle, rgba(0,0,0,.2) 25%, transparent 25%)',
-          borderRadius: '50%'
-        };
+        // En-passant captures leave move.to empty on the board, so check flags too
+        const isCapture = !!chess.get(move.to) || (move.flags && move.flags.includes('e'));
+        newSquares[move.to] = isCapture
+          ? {
+              // Capture indicator: dark ring around the enemy piece (chess.com style)
+              backgroundImage: 'radial-gradient(circle, transparent 65%, rgba(0,0,0,0.35) 65%)',
+              borderRadius: '50%',
+            }
+          : {
+              // Empty-square indicator: small filled dot centred on the square
+              backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.35) 28%, transparent 28%)',
+              borderRadius: '50%',
+            };
       });
     }
     
@@ -400,6 +469,7 @@ export default function GameRoom() {
 
   const onSquareClick = useCallback((arg1) => {
     console.log('SQUARE CLICK', { arg1, playerColor, moveInputStyle: settings.moveInputStyle });
+    if (gamePhaseRef.current !== 'PLAYING') return;
     if (playerColor === 'viewer') return;
     if (settings.moveInputStyle === 'drag') return; // Only drag allowed
 
@@ -454,6 +524,7 @@ export default function GameRoom() {
   const onDrop = useCallback((arg1, arg2) => {
     setOptionSquares({});
     setMoveFrom(null);
+    if (gamePhaseRef.current !== 'PLAYING') return false;
     if (isGameOver) return false;
     if (settings.moveInputStyle === 'click') return false;
     
@@ -569,11 +640,34 @@ export default function GameRoom() {
               squareStyles: dynamicSquareStyles,
               showNotation: settings.showCoordinates,
               boardOrientation: playerColor === 'w' ? 'white' : 'black',
-              darkSquareStyle: { backgroundColor: '#475569' },
-              lightSquareStyle: { backgroundColor: '#cbd5e1' },
-              allowDragging: settings.moveInputStyle !== 'click'
+              darkSquareStyle: { backgroundColor: boardTheme.darkSquareColor },
+              lightSquareStyle: { backgroundColor: boardTheme.lightSquareColor },
+              customPieces,
+              allowDragging: settings.moveInputStyle !== 'click' && gamePhase === 'PLAYING'
             }}
           />
+
+          {/* Pre-game Overlay */}
+          {gamePhase !== 'PLAYING' && !isGameOver && (
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(0,0,0,0.6)',
+              zIndex: 20,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.8)'
+            }}>
+              {gamePhase === 'WAITING' ? (
+                <h2 style={{ margin: 0, fontSize: '1.5rem', animation: 'pulse 1.5s infinite' }}>Waiting for opponent...</h2>
+              ) : (
+                <>
+                  <h2 style={{ margin: 0, fontSize: '1.5rem', marginBottom: '0.5rem', color: '#cbd5e1' }}>Game starts in</h2>
+                  <div style={{ fontSize: '5rem', fontWeight: 'bold', color: 'var(--accent-color)' }}>
+                    {countdownValue}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
           {/* Fix 1: Promotion Picker Overlay */}
           {pendingPromotion && (
@@ -654,10 +748,10 @@ export default function GameRoom() {
       </div>
 
       {/* Sidebar Area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem', overflow: 'hidden', minHeight: 0 }}>
         
         {/* Move List */}
-        <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', height: '200px' }}>
+        <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', height: '200px', flexShrink: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.75rem', padding: '0 0.5rem' }}>
             <h3 style={{ margin: 0 }}>Moves</h3>
             {openingName && <span style={{ fontSize: '0.8rem', color: 'var(--accent-color)', fontWeight: 'bold' }}>{openingName}</span>}
@@ -732,9 +826,9 @@ export default function GameRoom() {
           </div>
         )}
 
-        <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ marginBottom: '1rem' }}>Chat</h3>
-          <div className="surface-2" style={{ flex: 1, minHeight: '300px', maxHeight: '400px', overflowY: 'auto', padding: '1rem', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <h3 style={{ marginBottom: '1rem', flexShrink: 0 }}>Chat</h3>
+          <div className="surface-2" style={{ flex: 1, overflowY: 'auto', padding: '1rem', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {messages.length === 0 ? (
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', fontStyle: 'italic' }}>Chat connected...</p>
             ) : (
@@ -797,17 +891,6 @@ export default function GameRoom() {
             >Resign</button>
           )}
           <button onClick={() => socket.emit('offer_draw', { gameId, userId: user?.id })} className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)' }}>Draw</button>
-          
-          {isCasual && (
-            <button 
-              onClick={() => socket.emit('request_takeback', { gameId, userId: user?.id })} 
-              className="btn" 
-              title="Request Takeback"
-              style={{ padding: '0.5rem 1rem', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)' }}
-            >
-              ↩
-            </button>
-          )}
         </div>
         )}
       </div>

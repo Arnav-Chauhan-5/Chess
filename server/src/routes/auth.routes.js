@@ -53,7 +53,10 @@ router.get('/me', async (req, res) => {
     const payload = jwt.verify(token, JWT_REFRESH_SECRET);
     
     const prisma = require('../db');
-    const user = await prisma.user.findUnique({ where: { id: payload.id } });
+    const user = await prisma.user.findUnique({
+      where: { id: payload.id },
+      include: { equippedBoardTheme: true, equippedPieceSet: true }
+    });
     if (!user) return res.status(401).json({ error: 'User not found' });
     
     const tokens = authService.generateTokens(user);

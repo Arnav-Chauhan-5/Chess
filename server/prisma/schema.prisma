@@ -26,21 +26,35 @@ enum EndReason {
   ABANDONED
 }
 
+enum CosmeticType {
+  BOARD_THEME
+  PIECE_SET
+}
+
 model User {
-  id              String         @id @default(uuid())
-  username        String         @unique
-  email           String         @unique
-  passwordHash    String?                       // null for OAuth-only users
-  avatarUrl       String?
-  rating          Int            @default(1200)
-  showOnlineStatus Boolean       @default(true)
-  createdAt       DateTime       @default(now())
-  oauthAccounts   OAuthAccount[]
-  gamesAsWhite    Game[]         @relation("GamesAsWhite")
-  gamesAsBlack    Game[]         @relation("GamesAsBlack")
-  friendsSent     Friendship[]   @relation("FriendRequester")
-  friendsReceived Friendship[]   @relation("FriendAddressee")
-  notifications   Notification[]
+  id                   String         @id @default(uuid())
+  username             String         @unique
+  email                String         @unique
+  passwordHash         String?                       // null for OAuth-only users
+  avatarUrl            String?
+  rating               Int            @default(1200)
+  coinsBalance         Int            @default(0)   // Chess Coins earned from daily challenges etc.
+  dailyChallengeStreak Int            @default(0)   // Consecutive days completing the daily challenge
+  showOnlineStatus     Boolean        @default(true)
+  // Currently equipped cosmetics (null = app default)
+  equippedBoardThemeId String?
+  equippedPieceSetId   String?
+  createdAt            DateTime       @default(now())
+  oauthAccounts        OAuthAccount[]
+  gamesAsWhite         Game[]         @relation("GamesAsWhite")
+  gamesAsBlack         Game[]         @relation("GamesAsBlack")
+  friendsSent          Friendship[]   @relation("FriendRequester")
+  friendsReceived      Friendship[]   @relation("FriendAddressee")
+  dailyChallenges      DailyChallenge[]
+  notifications        Notification[]
+  ownedCosmetics       UserCosmetic[]
+  equippedBoardTheme   CosmeticItem?  @relation("EquippedBoardTheme", fields: [equippedBoardThemeId], references: [id])
+  equippedPieceSet     CosmeticItem?  @relation("EquippedPieceSet", fields: [equippedPieceSetId], references: [id])
 }
 
 model Friendship {
@@ -112,4 +126,52 @@ model Move {
   fenAfter    String
   playerColor String   // "white" | "black"
   createdAt   DateTime @default(now())
+}
+
+model DailyChallenge {
+  id            String    @id @default(uuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  // UTC midnight of the day this challenge covers, e.g. 2026-08-27T00:00:00.000Z
+  challengeDate DateTime
+  completedAt   DateTime? // set when the qualifying game finishes; null = not yet done
+  rewarded      Boolean   @default(false) // true once coins have been awarded for this day
+
+  @@unique([userId, challengeDate])
+}
+
+// ── Cosmetics ─────────────────────────────────────────────────────────────────
+
+// The catalog of all purchasable (and free) cosmetic items
+model CosmeticItem {
+  id               String        @id @default(uuid())
+  type             CosmeticType
+  name             String
+  description      String        @default("")
+  coinCost         Int           @default(0)
+  isDefault        Boolean       @default(false) // Free starter — all new users get it automatically
+  // Board theme fields (null for PIECE_SET items)
+  lightSquareColor String?
+  darkSquareColor  String?
+  highlightColor   String?       // Optional accent for selected-square overlay (client hint)
+  // Piece set fields (null for BOARD_THEME items)
+  pieceSetKey      String?       // Client-side key mapping to a react-chessboard piece style
+  createdAt        DateTime      @default(now())
+
+  ownedByUsers     UserCosmetic[]
+  equippedAsBoard  User[]        @relation("EquippedBoardTheme")
+  equippedAsPieces User[]        @relation("EquippedPieceSet")
+}
+
+// Junction table: which users own which cosmetic items
+model UserCosmetic {
+  id             String       @id @default(uuid())
+  userId         String
+  cosmeticItemId String
+  user           User         @relation(fields: [userId], references: [id])
+  cosmeticItem   CosmeticItem @relation(fields: [cosmeticItemId], references: [id])
+  purchasedAt    DateTime     @default(now())
+  coinsPaid      Int          @default(0) // 0 for default/gifted items
+
+  @@unique([userId, cosmeticItemId])
 }

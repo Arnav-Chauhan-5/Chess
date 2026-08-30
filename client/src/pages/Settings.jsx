@@ -129,8 +129,8 @@ export default function Settings() {
             />
             <ToggleRow 
               id="showLegalMoves" 
-              label="Show Legal Moves" 
-              description="Highlight valid destination squares when dragging a piece."
+              label="Show Legal Move Indicators" 
+              description="Show dots on empty squares and a ring on capturable pieces when a piece is selected."
               checked={settings.showLegalMoves}
               onChange={(val) => updateSetting('showLegalMoves', val)}
             />

@@ -4,12 +4,12 @@ import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../hooks/useSocket';
 import { useOutsideClick } from '../../hooks/useOutsideClick';
 import { useSettings } from '../../context/SettingsContext';
-import { Play, Trophy, History, User as UserIcon, Settings, LogOut, Menu, X, ChevronDown, Eye, Users, Bell, BookOpen } from 'lucide-react';
+import { Play, Trophy, History, User as UserIcon, Settings, LogOut, Menu, X, ChevronDown, Eye, Users, Bell, BookOpen, Moon, Monitor, ShoppingBag } from 'lucide-react';
 
 export default function AppShell({ children }) {
   const { user, token, logout } = useAuth();
   const { socket } = useSocket();
-  const { settings } = useSettings();
+  const { settings, updateSetting } = useSettings();
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -17,6 +17,7 @@ export default function AppShell({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [coinsBalance, setCoinsBalance] = useState(null);
   
   const notificationsRef = useOutsideClick(() => setNotificationsOpen(false));
   const userDropdownRef = useOutsideClick(() => setDropdownOpen(false));
@@ -43,6 +44,17 @@ export default function AppShell({ children }) {
       .catch(e => console.error('Failed to fetch notifications', e));
   }, [user, token]);
 
+  // Fetch coin balance on mount
+  useEffect(() => {
+    if (!user || !token) return;
+    fetch(`http://localhost:3000/users/daily-challenge?userId=${user.id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.coinsBalance != null) setCoinsBalance(data.coinsBalance); })
+      .catch(() => {});
+  }, [user, token]);
+
   useEffect(() => {
     if (!socket || !user) return;
     
@@ -52,6 +64,13 @@ export default function AppShell({ children }) {
 
     socket.on('online_count', (count) => {
       setOnlineCount(count);
+    });
+
+    // Live coin update from daily challenge
+    socket.on('daily_challenge_updated', (data) => {
+      if (data.coinsAwarded) {
+        setCoinsBalance(prev => (prev ?? 0) + data.coinsAwarded);
+      }
     });
 
     socket.on('friend_challenge_received', (data) => {
@@ -89,6 +108,7 @@ export default function AppShell({ children }) {
 
     return () => {
       socket.off('online_count');
+      socket.off('daily_challenge_updated');
       socket.off('friend_challenge_received');
       socket.off('friend_challenge_declined');
       socket.off('game_started');
@@ -164,14 +184,15 @@ export default function AppShell({ children }) {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const navItems = [
-    { path: '/lobby', label: 'Play', icon: Play },
-    { path: '/rules', label: 'How to Play', icon: BookOpen },
-    { path: '/friends', label: 'Friends', icon: Users },
-    { path: '/watch', label: 'Watch', icon: Eye },
-    { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
-    { path: '/history', label: 'Game History', icon: History },
-    { path: '/profile', label: 'Profile', icon: UserIcon },
-    { path: '/settings', label: 'Settings', icon: Settings },
+    { path: '/lobby',       label: 'Play',         icon: Play },
+    { path: '/rules',       label: 'How to Play',  icon: BookOpen },
+    { path: '/friends',     label: 'Friends',      icon: Users },
+    { path: '/watch',       label: 'Watch',        icon: Eye },
+    { path: '/leaderboard', label: 'Leaderboard',  icon: Trophy },
+    { path: '/history',     label: 'Game History', icon: History },
+    { path: '/shop',        label: 'Shop',         icon: ShoppingBag },
+    { path: '/profile',     label: 'Profile',      icon: UserIcon },
+    { path: '/settings',    label: 'Settings',     icon: Settings },
   ];
 
   return (
@@ -232,6 +253,53 @@ export default function AppShell({ children }) {
             )
           })}
         </nav>
+
+        {/* Theme switcher footer — Light palette not built yet; both options stay dark */}
+        <div style={{
+          padding: '1rem',
+          borderTop: '1px solid var(--border-color)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.5rem'
+        }}>
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.25rem' }}>Theme</div>
+          <div style={{ display: 'flex', gap: '0.4rem' }}>
+            {[
+              { value: 'dark',   Icon: Moon,    label: 'Dark'   },
+              { value: 'system', Icon: Monitor, label: 'System' },
+            ].map(({ value, Icon, label }) => {
+              const active = settings.theme === value;
+              return (
+                <button
+                  key={value}
+                  title={label}
+                  onClick={() => updateSetting('theme', value)}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.3rem',
+                    padding: '0.45rem 0.3rem',
+                    borderRadius: '6px',
+                    border: active ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
+                    background: active ? 'rgba(59,130,246,0.15)' : 'transparent',
+                    color: active ? 'var(--accent-color)' : 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    fontSize: '0.7rem',
+                    fontWeight: active ? '700' : '400',
+                    fontFamily: 'inherit',
+                    transition: 'all 0.2s'
+                  }}
+                  className="theme-btn"
+                >
+                  <Icon size={13} />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </aside>
 
       {/* Main Content Area */}
@@ -259,7 +327,29 @@ export default function AppShell({ children }) {
 
           {user && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-              
+
+              {/* Coin Balance Chip */}
+              {coinsBalance !== null && (
+                <div
+                  onClick={() => navigate('/shop')}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '0.4rem',
+                    background: 'linear-gradient(135deg, rgba(234,179,8,0.18), rgba(251,191,36,0.10))',
+                    border: '1px solid rgba(234,179,8,0.35)',
+                    borderRadius: '20px', padding: '0.35rem 0.85rem',
+                    cursor: 'pointer', transition: 'all 0.2s',
+                    userSelect: 'none',
+                  }}
+                  className="coin-chip"
+                  title="Chess Coins — click to open Shop"
+                >
+                  <span style={{ fontSize: '1rem', lineHeight: 1 }}>🪙</span>
+                  <span style={{ fontWeight: '700', fontSize: '0.88rem', color: '#fbbf24', letterSpacing: '0.3px' }}>
+                    {coinsBalance.toLocaleString()}
+                  </span>
+                </div>
+              )}
+
               {/* Notification Bell */}
               <div style={{ position: 'relative' }} ref={notificationsRef}>
                 <button 
@@ -518,11 +608,20 @@ export default function AppShell({ children }) {
         .nav-link:hover {
           background: rgba(255,255,255,0.05) !important;
         }
+        .coin-chip:hover {
+          background: linear-gradient(135deg, rgba(234,179,8,0.28), rgba(251,191,36,0.18)) !important;
+          border-color: rgba(234,179,8,0.6) !important;
+          transform: scale(1.03);
+        }
         .user-dropdown-btn:hover {
           background: rgba(255,255,255,0.1) !important;
         }
         .dropdown-item:hover, .notification-item:hover {
           background: rgba(255,255,255,0.05) !important;
+        }
+        .theme-btn:hover {
+          border-color: var(--accent-color) !important;
+          color: var(--text-primary) !important;
         }
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-10px); }

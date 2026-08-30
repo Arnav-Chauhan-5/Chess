@@ -74,6 +74,8 @@ router.get('/profile', async (req, res) => {
     let wins = 0;
     let losses = 0;
     let draws = 0;
+    let bestRating = null;
+    let bestRatingDate = null;
 
     games.forEach(game => {
       const isWhite = game.whiteId === userId;
@@ -84,6 +86,17 @@ router.get('/profile', async (req, res) => {
       } else if (game.status === 'BLACK_WON') {
         !isWhite ? wins++ : losses++;
       }
+
+      // Compute post-game rating for this player
+      const ratingAtGame = isWhite ? game.whiteRatingAtGame : game.blackRatingAtGame;
+      const delta = isWhite ? game.whiteRatingDelta : game.blackRatingDelta;
+      if (ratingAtGame != null && delta != null) {
+        const postGameRating = ratingAtGame + delta;
+        if (bestRating === null || postGameRating > bestRating) {
+          bestRating = postGameRating;
+          bestRatingDate = game.endedAt || game.createdAt;
+        }
+      }
     });
 
     // Remove password hash before sending to client
@@ -92,13 +105,56 @@ router.get('/profile', async (req, res) => {
 
     res.json({ 
       user: { ...user, hasPassword }, 
-      stats: { wins, losses, draws, total: games.length },
+      stats: { wins, losses, draws, total: games.length, bestRating, bestRatingDate },
       recentGames: games.slice(0, 20) // Give top 20 for profile
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch profile' });
   }
 });
+
+// ── Daily Challenge ───────────────────────────────────────────────────────────
+// Returns (or lazily creates) today's challenge record for a user.
+// "Today" is always UTC midnight so it stays consistent with DB timestamps.
+function getTodayUTC() {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+}
+
+router.get('/daily-challenge', isAuthenticated, async (req, res) => {
+  try {
+    const { userId } = req.query;
+    if (!userId) return res.status(400).json({ error: 'userId is required' });
+
+    const challengeDate = getTodayUTC();
+
+    // Upsert: create the row if it doesn't exist yet for today
+    const [record, user] = await Promise.all([
+      prisma.dailyChallenge.upsert({
+        where: { userId_challengeDate: { userId, challengeDate } },
+        update: {},           // nothing to update on mere read
+        create: { userId, challengeDate },
+      }),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { coinsBalance: true, dailyChallengeStreak: true },
+      }),
+    ]);
+
+    res.json({
+      completed:            record.completedAt !== null,
+      rewarded:             record.rewarded,
+      challengeDate:        record.challengeDate,
+      streak:               user?.dailyChallengeStreak ?? 0,
+      coinsBalance:         user?.coinsBalance ?? 0,
+    });
+  } catch (err) {
+    console.error('daily-challenge GET error:', err);
+    res.status(500).json({ error: 'Failed to fetch daily challenge' });
+  }
+});
+
+
 
 router.patch('/profile', async (req, res) => {
   try {

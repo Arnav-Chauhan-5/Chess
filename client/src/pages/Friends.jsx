@@ -205,7 +205,9 @@ export default function Friends() {
                     </div>
                     <div>
                       <div style={{ fontWeight: 'bold' }}>{f.username}</div>
-                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Rating: {f.rating}</div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                        Rating: {f.rating} • <span style={{ color: f.isOnline ? '#10b981' : '#6b7280' }}>{f.isOnline ? 'Online' : 'Offline'}</span>
+                      </div>
                     </div>
                   </div>
                   {(() => {

@@ -3,6 +3,7 @@ const aiService = require('../services/aiService');
 const gameService = require('../services/gameService');
 const notificationService = require('../services/notificationService');
 const prisma = require('../db');
+const socketStore = require('./socketStore');
 
 // Track which userId is associated with which socket, and pending disconnect timers
 const userSockets = new Map();    // userId -> Set<socketId>
@@ -13,6 +14,88 @@ const RECONNECT_GRACE_MS = 30000; // 30 seconds
 
 // Server-side clock check intervals per game
 const clockIntervals = new Map(); // gameId -> intervalId
+
+const DAILY_CHALLENGE_COINS = 50; // Coins awarded per daily challenge completion
+
+// ── Daily Challenge helper ────────────────────────────────────────────────────
+// Called after every qualifying game finish (WHITE_WON, BLACK_WON, DRAW).
+// Upserts today's DailyChallenge row for each human player and, on the first
+// qualifying game of the day:
+//   • Marks the challenge as completed
+//   • Awards DAILY_CHALLENGE_COINS coins to the user
+//   • Updates the consecutive-day streak (resets to 1 if yesterday wasn't done)
+//   • Sets rewarded = true so the award can't fire twice
+//   • Emits 'daily_challenge_updated' to that user's socket room
+async function markDailyChallenge(io, userId) {
+  if (!userId) return;
+  try {
+    const now = new Date();
+    const challengeDate = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+    );
+
+    // ── FIX ──────────────────────────────────────────────────────────────────
+    // The previous code passed `{ completedAt: { set: undefined } }` in the
+    // update block, which Prisma v7 rejects with:
+    //   "Expected DateTime or Null, provided Object"
+    // This threw on every call and was swallowed by the catch — meaning
+    // completedAt was never set and coins were never awarded.
+    // Fix: pass an empty update: {} so upsert just returns the existing row.
+    const record = await prisma.dailyChallenge.upsert({
+      where: { userId_challengeDate: { userId, challengeDate } },
+      update: {},           // idempotent read — only the create branch is new
+      create: { userId, challengeDate },
+    });
+
+    // Only proceed if not already completed today (prevents double-award)
+    if (!record.completedAt) {
+      // ── Streak calculation ──────────────────────────────────────────────
+      const yesterday = new Date(challengeDate.getTime() - 24 * 60 * 60 * 1000);
+      const [yesterdayRecord, userRow] = await Promise.all([
+        prisma.dailyChallenge.findUnique({
+          where: { userId_challengeDate: { userId, challengeDate: yesterday } },
+          select: { completedAt: true },
+        }),
+        prisma.user.findUnique({
+          where: { id: userId },
+          select: { dailyChallengeStreak: true },
+        }),
+      ]);
+
+      const newStreak = yesterdayRecord?.completedAt
+        ? (userRow?.dailyChallengeStreak ?? 0) + 1  // consecutive day → increment
+        : 1;                                          // streak broken → reset to 1
+
+      // ── Persist completion + award ──────────────────────────────────────
+      await Promise.all([
+        prisma.dailyChallenge.update({
+          where: { id: record.id },
+          data: { completedAt: now, rewarded: true },
+        }),
+        prisma.user.update({
+          where: { id: userId },
+          data: {
+            coinsBalance:         { increment: DAILY_CHALLENGE_COINS },
+            dailyChallengeStreak: newStreak,
+          },
+        }),
+      ]);
+
+      // ── Notify client ───────────────────────────────────────────────────
+      io.to(`user_${userId}`).emit('daily_challenge_updated', {
+        completed:    true,
+        coinsAwarded: DAILY_CHALLENGE_COINS,
+        streak:       newStreak,
+      });
+
+      console.log(`[markDailyChallenge] userId=${userId} completed. Streak=${newStreak}, coins+=${DAILY_CHALLENGE_COINS}`);
+    }
+  } catch (err) {
+    // Non-fatal — don't let a challenge tracking failure break the game
+    console.error('[markDailyChallenge] error for userId', userId, err);
+  }
+}
+
 
 function stopClockCheck(gameId) {
   const intervalId = clockIntervals.get(gameId);
@@ -100,6 +183,21 @@ async function finalizeGame(io, gameId, game, status, reason) {
   
   // Broadcast updated live games list since one just finished
   io.emit('live_games_updated', gameService.getLiveGames());
+
+  // ── Daily challenge tracking ─────────────────────────────────────────────
+  // Any terminal status (WHITE_WON, BLACK_WON, DRAW) counts as qualifying.
+  // Mark challenge complete for both human participants.
+  const isQualifying = ['WHITE_WON', 'BLACK_WON', 'DRAW'].includes(status);
+  if (isQualifying) {
+    const humanWhiteId = game.whiteId !== 'AI' ? game.whiteId : null;
+    const humanBlackId = game.blackId !== 'AI' ? game.blackId : null;
+    await Promise.all([
+      markDailyChallenge(io, humanWhiteId),
+      markDailyChallenge(io, humanBlackId),
+    ]);
+  }
+
+
 }
 
 function startClockCheck(io, gameId) {
@@ -251,8 +349,23 @@ module.exports = (io, socket) => {
         blackTimeLeftMs: game.blackTimeLeftMs,
         lastMoveTime: game.lastMoveTime,
         vsAI: game.vsAI,
-        isCasual: game.isCasual
+        isCasual: game.isCasual,
+        hasStarted: !!game.lastMoveTime
       });
+
+      // If the game hasn't officially started (no first move yet)
+      if (!game.lastMoveTime) {
+        if (game.vsAI) {
+          socket.emit('players_ready');
+        } else {
+          // Check if both human players are currently connected
+          const whiteConnected = game.whiteId && userSockets.has(game.whiteId) && userSockets.get(game.whiteId).size > 0;
+          const blackConnected = game.blackId && userSockets.has(game.blackId) && userSockets.get(game.blackId).size > 0;
+          if (whiteConnected && blackConnected) {
+            io.to(`game_${gameId}`).emit('players_ready');
+          }
+        }
+      }
 
       // Start server-side clock check if a move has been made
       if (game.lastMoveTime) {
