@@ -16,187 +16,212 @@ const activeStyle = {
   backgroundColor: 'rgba(255, 255, 0, 0.4)'
 };
 
-const RULES_CONTENT = [
+const RULES_CATEGORIES = [
   {
-    id: 'overview',
-    title: 'Overview',
-    description: 'The objective of chess is to checkmate your opponent\'s king. A game can also end in a draw.',
-    fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
-    highlights: {}
+    title: 'GETTING STARTED',
+    rules: [
+      {
+        id: 'overview',
+        title: 'Overview',
+        description: 'The objective of chess is to checkmate your opponent\'s king. A game can also end in a draw.',
+        fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+        highlights: {}
+      },
+      {
+        id: 'setup',
+        title: 'The Board & Setup',
+        description: 'The board consists of 64 squares in an 8x8 grid. Rows are called "ranks" (1-8), and columns are called "files" (a-h). White always moves first.',
+        fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+        highlights: {}
+      }
+    ]
   },
   {
-    id: 'setup',
-    title: 'The Board & Setup',
-    description: 'The board consists of 64 squares in an 8x8 grid. Rows are called "ranks" (1-8), and columns are called "files" (a-h). White always moves first.',
-    fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
-    highlights: {}
+    title: 'PIECES & MOVEMENT',
+    rules: [
+      {
+        id: 'pawn',
+        title: 'Pieces: Pawn',
+        description: 'Pawns move forward exactly one square, but capture diagonally. On their very first move, they have the option to advance two squares.',
+        fen: '8/8/8/8/8/8/P7/8 w - - 0 1',
+        highlights: {
+          a2: activeStyle,
+          a3: dotStyle,
+          a4: dotStyle,
+        }
+      },
+      {
+        id: 'knight',
+        title: 'Pieces: Knight',
+        description: 'Knights move in an L-shape (two squares in one direction, one in a perpendicular direction). They are the only pieces that can jump over others.',
+        fen: '8/8/8/8/4N3/8/8/8 w - - 0 1',
+        highlights: {
+          e4: activeStyle,
+          d6: dotStyle, f6: dotStyle,
+          c5: dotStyle, g5: dotStyle,
+          c3: dotStyle, g3: dotStyle,
+          d2: dotStyle, f2: dotStyle
+        }
+      },
+      {
+        id: 'bishop',
+        title: 'Pieces: Bishop',
+        description: 'Bishops move any number of vacant squares diagonally.',
+        fen: '8/8/8/8/4B3/8/8/8 w - - 0 1',
+        highlights: {
+          e4: activeStyle,
+          d5: dotStyle, c6: dotStyle, b7: dotStyle, a8: dotStyle,
+          f5: dotStyle, g6: dotStyle, h7: dotStyle,
+          d3: dotStyle, c2: dotStyle, b1: dotStyle,
+          f3: dotStyle, g2: dotStyle, h1: dotStyle
+        }
+      },
+      {
+        id: 'rook',
+        title: 'Pieces: Rook',
+        description: 'Rooks move any number of vacant squares horizontally or vertically.',
+        fen: '8/8/8/8/4R3/8/8/8 w - - 0 1',
+        highlights: {
+          e4: activeStyle,
+          e5: dotStyle, e6: dotStyle, e7: dotStyle, e8: dotStyle,
+          e3: dotStyle, e2: dotStyle, e1: dotStyle,
+          a4: dotStyle, b4: dotStyle, c4: dotStyle, d4: dotStyle,
+          f4: dotStyle, g4: dotStyle, h4: dotStyle
+        }
+      },
+      {
+        id: 'queen',
+        title: 'Pieces: Queen',
+        description: 'The Queen is the most powerful piece. It moves any number of vacant squares horizontally, vertically, or diagonally.',
+        fen: '8/8/8/8/4Q3/8/8/8 w - - 0 1',
+        highlights: {
+          e4: activeStyle,
+          d5: dotStyle, f5: dotStyle, d3: dotStyle, f3: dotStyle,
+          e5: dotStyle, e3: dotStyle, d4: dotStyle, f4: dotStyle
+        }
+      },
+      {
+        id: 'king',
+        title: 'Pieces: King',
+        description: 'The King moves exactly one square horizontally, vertically, or diagonally. If the King is trapped, the game is over.',
+        fen: '8/8/8/8/4K3/8/8/8 w - - 0 1',
+        highlights: {
+          e4: activeStyle,
+          d5: dotStyle, e5: dotStyle, f5: dotStyle,
+          d4: dotStyle, f4: dotStyle,
+          d3: dotStyle, e3: dotStyle, f3: dotStyle
+        }
+      }
+    ]
   },
   {
-    id: 'pawn',
-    title: 'Pieces: Pawn',
-    description: 'Pawns move forward exactly one square, but capture diagonally. On their very first move, they have the option to advance two squares.',
-    fen: '8/8/8/8/8/8/P7/8 w - - 0 1',
-    highlights: {
-      a2: activeStyle,
-      a3: dotStyle,
-      a4: dotStyle,
-    }
+    title: 'SPECIAL MOVES',
+    rules: [
+      {
+        id: 'castling',
+        title: 'Special Moves: Castling',
+        description: 'Castling moves the king two squares towards a rook, and the rook jumps over the king. It requires that neither piece has moved, and the path is clear.',
+        fen: 'r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1',
+        afterFen: 'r3k2r/8/8/8/8/8/8/R4RK1 w kq - 1 1',
+        highlights: {
+          e1: activeStyle,
+          g1: dotStyle
+        }
+      },
+      {
+        id: 'en-passant',
+        title: 'Special Moves: En Passant',
+        description: 'If a pawn advances two squares past an opponent\'s pawn, the opponent can capture it "in passing" on the very next turn.',
+        fen: '8/8/8/3pP3/8/8/8/8 w - d6 0 2',
+        afterFen: '8/8/3P4/8/8/8/8/8 b - - 0 2',
+        highlights: {
+          e5: activeStyle,
+          d6: captureStyle
+        }
+      },
+      {
+        id: 'promotion',
+        title: 'Special Moves: Promotion',
+        description: 'When a pawn reaches the opposite end of the board, it must be promoted to a queen, rook, bishop, or knight.',
+        fen: '8/4P3/8/8/8/8/8/8 w - - 0 1',
+        afterFen: '4Q3/8/8/8/8/8/8/8 b - - 0 1',
+        highlights: {
+          e7: activeStyle,
+          e8: dotStyle
+        }
+      }
+    ]
   },
   {
-    id: 'knight',
-    title: 'Pieces: Knight',
-    description: 'Knights move in an L-shape (two squares in one direction, one in a perpendicular direction). They are the only pieces that can jump over others.',
-    fen: '8/8/8/8/4N3/8/8/8 w - - 0 1',
-    highlights: {
-      e4: activeStyle,
-      d6: dotStyle, f6: dotStyle,
-      c5: dotStyle, g5: dotStyle,
-      c3: dotStyle, g3: dotStyle,
-      d2: dotStyle, f2: dotStyle
-    }
+    title: 'GAME END CONDITIONS',
+    rules: [
+      {
+        id: 'checkmate',
+        title: 'Check & Checkmate',
+        description: 'When a king is attacked, it is in "check". If there is no legal move to escape check, it is "checkmate" and the game ends.',
+        fen: 'k7/8/1Q6/8/8/8/8/7K w - - 0 1',
+        afterFen: 'kQ6/8/8/8/8/8/8/7K b - - 0 1',
+        highlights: {
+          a8: { backgroundColor: 'rgba(239, 68, 68, 0.8)' }
+        }
+      },
+      {
+        id: 'stalemate',
+        title: 'Stalemate',
+        description: 'If it is a player\'s turn to move, their king is NOT in check, and they have no legal moves, the game is a "stalemate" (a draw).',
+        fen: 'k7/2Q5/8/8/8/8/8/7K b - - 0 1',
+        highlights: {
+          a8: activeStyle
+        }
+      }
+    ]
   },
   {
-    id: 'bishop',
-    title: 'Pieces: Bishop',
-    description: 'Bishops move any number of vacant squares diagonally.',
-    fen: '8/8/8/8/4B3/8/8/8 w - - 0 1',
-    highlights: {
-      e4: activeStyle,
-      d5: dotStyle, c6: dotStyle, b7: dotStyle, a8: dotStyle,
-      f5: dotStyle, g6: dotStyle, h7: dotStyle,
-      d3: dotStyle, c2: dotStyle, b1: dotStyle,
-      f3: dotStyle, g2: dotStyle, h1: dotStyle
-    }
-  },
-  {
-    id: 'rook',
-    title: 'Pieces: Rook',
-    description: 'Rooks move any number of vacant squares horizontally or vertically.',
-    fen: '8/8/8/8/4R3/8/8/8 w - - 0 1',
-    highlights: {
-      e4: activeStyle,
-      e5: dotStyle, e6: dotStyle, e7: dotStyle, e8: dotStyle,
-      e3: dotStyle, e2: dotStyle, e1: dotStyle,
-      a4: dotStyle, b4: dotStyle, c4: dotStyle, d4: dotStyle,
-      f4: dotStyle, g4: dotStyle, h4: dotStyle
-    }
-  },
-  {
-    id: 'queen',
-    title: 'Pieces: Queen',
-    description: 'The Queen is the most powerful piece. It moves any number of vacant squares horizontally, vertically, or diagonally.',
-    fen: '8/8/8/8/4Q3/8/8/8 w - - 0 1',
-    highlights: {
-      e4: activeStyle,
-      d5: dotStyle, f5: dotStyle, d3: dotStyle, f3: dotStyle,
-      e5: dotStyle, e3: dotStyle, d4: dotStyle, f4: dotStyle
-    }
-  },
-  {
-    id: 'king',
-    title: 'Pieces: King',
-    description: 'The King moves exactly one square horizontally, vertically, or diagonally. If the King is trapped, the game is over.',
-    fen: '8/8/8/8/4K3/8/8/8 w - - 0 1',
-    highlights: {
-      e4: activeStyle,
-      d5: dotStyle, e5: dotStyle, f5: dotStyle,
-      d4: dotStyle, f4: dotStyle,
-      d3: dotStyle, e3: dotStyle, f3: dotStyle
-    }
-  },
-  {
-    id: 'castling',
-    title: 'Special Moves: Castling',
-    description: 'Castling moves the king two squares towards a rook, and the rook jumps over the king. It requires that neither piece has moved, and the path is clear.',
-    fen: 'r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1',
-    afterFen: 'r3k2r/8/8/8/8/8/8/R4RK1 w kq - 1 1',
-    highlights: {
-      e1: activeStyle,
-      g1: dotStyle
-    }
-  },
-  {
-    id: 'en-passant',
-    title: 'Special Moves: En Passant',
-    description: 'If a pawn advances two squares past an opponent\'s pawn, the opponent can capture it "in passing" on the very next turn.',
-    fen: '8/8/8/3pP3/8/8/8/8 w - d6 0 2',
-    afterFen: '8/8/3P4/8/8/8/8/8 b - - 0 2',
-    highlights: {
-      e5: activeStyle,
-      d6: captureStyle
-    }
-  },
-  {
-    id: 'promotion',
-    title: 'Special Moves: Promotion',
-    description: 'When a pawn reaches the opposite end of the board, it must be promoted to a queen, rook, bishop, or knight.',
-    fen: '8/4P3/8/8/8/8/8/8 w - - 0 1',
-    afterFen: '4Q3/8/8/8/8/8/8/8 b - - 0 1',
-    highlights: {
-      e7: activeStyle,
-      e8: dotStyle
-    }
-  },
-  {
-    id: 'checkmate',
-    title: 'Check & Checkmate',
-    description: 'When a king is attacked, it is in "check". If there is no legal move to escape check, it is "checkmate" and the game ends.',
-    fen: 'k7/8/1Q6/8/8/8/8/7K w - - 0 1',
-    afterFen: 'kQ6/8/8/8/8/8/8/7K b - - 0 1',
-    highlights: {
-      a8: { backgroundColor: 'rgba(239, 68, 68, 0.8)' }
-    }
-  },
-  {
-    id: 'stalemate',
-    title: 'Stalemate',
-    description: 'If it is a player\'s turn to move, their king is NOT in check, and they have no legal moves, the game is a "stalemate" (a draw).',
-    fen: 'k7/2Q5/8/8/8/8/8/7K b - - 0 1',
-    highlights: {
-      a8: activeStyle
-    }
-  },
-  {
-    id: 'opening-italian',
-    title: 'Openings: Italian Game',
-    description: '1. e4 e5 2. Nf3 Nc6 3. Bc4\n\nThe Italian Game focuses on rapid development and controlling the center, while eyeing Black\'s vulnerable f7 square.',
-    fen: 'r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3',
-    highlights: {}
-  },
-  {
-    id: 'opening-ruy-lopez',
-    title: 'Openings: Ruy Lopez',
-    description: '1. e4 e5 2. Nf3 Nc6 3. Bb5\n\nAlso known as the Spanish Opening, it applies early pressure to the knight defending the center.',
-    fen: 'r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3',
-    highlights: {}
-  },
-  {
-    id: 'opening-sicilian',
-    title: 'Openings: Sicilian Defense',
-    description: '1. e4 c5\n\nBlack fights for the center asymmetrically, creating unbalanced and highly tactical positions.',
-    fen: 'rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2',
-    highlights: {}
-  },
-  {
-    id: 'opening-french',
-    title: 'Openings: French Defense',
-    description: '1. e4 e6\n\nA solid, resilient setup for Black that usually leads to a closed center and strategic maneuvering.',
-    fen: 'rnbqkbnr/pppp1ppp/4p3/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2',
-    highlights: {}
-  },
-  {
-    id: 'opening-queens-gambit',
-    title: "Openings: Queen's Gambit",
-    description: '1. d4 d5 2. c4\n\nWhite temporarily sacrifices a wing pawn to gain control of the center and rapid piece activity.',
-    fen: 'rnbqkbnr/ppp1pppp/8/3p4/2PP4/8/PP2PPPP/RNBQKBNR b KQkq - 0 2',
-    highlights: {}
-  },
-  {
-    id: 'opening-kings-indian',
-    title: "Openings: King's Indian Defense",
-    description: '1. d4 Nf6 2. c4 g6 3. Nc3 Bg7 4. e4 d6\n\nBlack allows White to build a massive pawn center, planning to counterattack it later from the flanks.',
-    fen: 'rnbqk2r/ppp1ppbp/3p1np1/8/2PPP3/2N5/PP3PPP/R1BQKBNR w KQkq - 0 5',
-    highlights: {}
+    title: 'OPENINGS',
+    rules: [
+      {
+        id: 'opening-italian',
+        title: 'Openings: Italian Game',
+        description: '1. e4 e5 2. Nf3 Nc6 3. Bc4\n\nThe Italian Game focuses on rapid development and controlling the center, while eyeing Black\'s vulnerable f7 square.',
+        fen: 'r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3',
+        highlights: {}
+      },
+      {
+        id: 'opening-ruy-lopez',
+        title: 'Openings: Ruy Lopez',
+        description: '1. e4 e5 2. Nf3 Nc6 3. Bb5\n\nAlso known as the Spanish Opening, it applies early pressure to the knight defending the center.',
+        fen: 'r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3',
+        highlights: {}
+      },
+      {
+        id: 'opening-sicilian',
+        title: 'Openings: Sicilian Defense',
+        description: '1. e4 c5\n\nBlack fights for the center asymmetrically, creating unbalanced and highly tactical positions.',
+        fen: 'rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2',
+        highlights: {}
+      },
+      {
+        id: 'opening-french',
+        title: 'Openings: French Defense',
+        description: '1. e4 e6\n\nA solid, resilient setup for Black that usually leads to a closed center and strategic maneuvering.',
+        fen: 'rnbqkbnr/pppp1ppp/4p3/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2',
+        highlights: {}
+      },
+      {
+        id: 'opening-queens-gambit',
+        title: "Openings: Queen's Gambit",
+        description: '1. d4 d5 2. c4\n\nWhite temporarily sacrifices a wing pawn to gain control of the center and rapid piece activity.',
+        fen: 'rnbqkbnr/ppp1pppp/8/3p4/2PP4/8/PP2PPPP/RNBQKBNR b KQkq - 0 2',
+        highlights: {}
+      },
+      {
+        id: 'opening-kings-indian',
+        title: "Openings: King's Indian Defense",
+        description: '1. d4 Nf6 2. c4 g6 3. Nc3 Bg7 4. e4 d6\n\nBlack allows White to build a massive pawn center, planning to counterattack it later from the flanks.',
+        fen: 'rnbqk2r/ppp1ppbp/3p1np1/8/2PPP3/2N5/PP3PPP/R1BQKBNR w KQkq - 0 5',
+        highlights: {}
+      }
+    ]
   }
 ];
 
@@ -282,50 +307,141 @@ function RuleBoard({ rule }) {
 }
 
 export default function Rules() {
+  const [activeTab, setActiveTab] = useState(0);
+  const [activeSection, setActiveSection] = useState(null);
+
+  // Deep-linking: switch to the tab containing the hash target
+  useEffect(() => {
+    const hash = window.location.hash.replace('#', '');
+    if (hash) {
+      const catIndex = RULES_CATEGORIES.findIndex(cat => 
+        cat.rules.some(r => r.id === hash)
+      );
+      if (catIndex !== -1) {
+        setActiveTab(catIndex);
+        setActiveSection(hash);
+        setTimeout(() => {
+          const el = document.getElementById(hash);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    }
+  }, []);
+
+  // Scrollspy: update active section as user scrolls
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      // Pick the first intersecting entry
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          setActiveSection(entry.target.id);
+        }
+      });
+    }, { rootMargin: '-20% 0px -60% 0px' }); // Triggers when element is in upper half of viewport
+
+    // Re-bind observer when tab changes
+    const currentRules = RULES_CATEGORIES[activeTab].rules;
+    currentRules.forEach(rule => {
+      const el = document.getElementById(rule.id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [activeTab]);
+
   return (
-    <div style={{ display: 'flex', gap: '2rem', maxWidth: '1200px', margin: '0 auto', padding: '2rem', width: '100%' }}>
+    <div style={{ maxWidth: '1080px', margin: '0 auto', padding: '2rem', width: '100%', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
-      {/* Sidebar Nav */}
-      <div style={{ width: '240px', flexShrink: 0 }}>
-        <div className="glass-panel" style={{ position: 'sticky', top: '90px', padding: '1.5rem 1rem' }}>
-          <h3 style={{ marginBottom: '1rem', paddingLeft: '0.5rem' }}>Sections</h3>
-          <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {RULES_CONTENT.map((rule, index) => (
-              <a 
-                key={`nav-${rule.id}`} 
-                href={`#${rule.id}`}
-                style={{ 
-                  color: 'var(--text-secondary)', 
-                  textDecoration: 'none',
-                  padding: '0.5rem',
-                  borderRadius: '6px',
-                  transition: 'background 0.2s'
-                }}
-                onMouseEnter={(e) => e.target.style.background = 'rgba(255,255,255,0.05)'}
-                onMouseLeave={(e) => e.target.style.background = 'transparent'}
-              >
-                {index + 1}. {rule.title}
-              </a>
-            ))}
-          </nav>
+      <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+        <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>How to Play Chess</h1>
+        
+        {/* Top Navigation Tabs */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap', borderBottom: '1px solid var(--border-color)', paddingBottom: '1px' }}>
+          {RULES_CATEGORIES.map((cat, index) => (
+            <button
+              key={cat.title}
+              onClick={() => { setActiveTab(index); window.scrollTo(0, 0); }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: activeTab === index ? 'var(--accent-color)' : 'var(--text-secondary)',
+                padding: '0.75rem 1.25rem',
+                fontSize: '0.9rem',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                borderBottom: activeTab === index ? '3px solid var(--accent-color)' : '3px solid transparent',
+                transition: 'all 0.2s',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                marginBottom: '-1px'
+              }}
+              onMouseEnter={(e) => {
+                if (activeTab !== index) e.target.style.color = 'var(--text-primary)';
+              }}
+              onMouseLeave={(e) => {
+                if (activeTab !== index) e.target.style.color = 'var(--text-secondary)';
+              }}
+            >
+              {cat.title}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Main Content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>How to Play Chess</h1>
-        
-        {RULES_CONTENT.map((rule, index) => (
-          <div key={rule.id} id={rule.id} className="glass-panel" style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
-            <div style={{ flex: 1 }}>
-              <h2 style={{ color: 'var(--accent-color)', marginBottom: '1rem' }}>{index + 1}. {rule.title}</h2>
-              <p style={{ fontSize: '1.1rem', lineHeight: 1.6, whiteSpace: 'pre-line' }}>{rule.description}</p>
-            </div>
-            
-            <RuleBoard rule={rule} />
+      <div style={{ display: 'flex', gap: '3rem', width: '100%', justifyContent: 'center' }}>
+        {/* Sidebar Nav */}
+        <div style={{ width: '200px', flexShrink: 0 }}>
+          <div className="glass-panel" style={{ position: 'sticky', top: '90px', padding: '1.5rem 1rem' }}>
+            <h3 style={{ marginBottom: '1rem', paddingLeft: '0.75rem', fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {RULES_CATEGORIES[activeTab].title}
+            </h3>
+            <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              {RULES_CATEGORIES[activeTab].rules.map((rule) => {
+                const isActive = activeSection === rule.id;
+                return (
+                  <a 
+                    key={`nav-${rule.id}`} 
+                    href={`#${rule.id}`}
+                    onClick={() => setActiveSection(rule.id)}
+                    style={{ 
+                      color: isActive ? 'var(--accent-color)' : 'var(--text-secondary)', 
+                      textDecoration: 'none',
+                      padding: '0.5rem 0.5rem 0.5rem 0.75rem',
+                      borderRadius: '0 4px 4px 0',
+                      transition: 'all 0.2s',
+                      borderLeft: isActive ? '3px solid var(--accent-color)' : '3px solid transparent',
+                      background: isActive ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                      fontWeight: isActive ? 'bold' : 'normal',
+                      fontSize: '0.95rem'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) e.target.style.background = 'rgba(255,255,255,0.05)';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) e.target.style.background = 'transparent';
+                    }}
+                  >
+                    {rule.title}
+                  </a>
+                );
+              })}
+            </nav>
           </div>
-        ))}
-        
+        </div>
+
+        {/* Main Content */}
+        <div style={{ flex: 1, maxWidth: '760px', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          {RULES_CATEGORIES[activeTab].rules.map((rule) => (
+            <div key={rule.id} id={rule.id} className="glass-panel" style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ color: 'var(--accent-color)', marginBottom: '1rem', fontSize: '1.5rem' }}>{rule.title}</h3>
+                <p style={{ fontSize: '1.1rem', lineHeight: 1.6, whiteSpace: 'pre-line' }}>{rule.description}</p>
+              </div>
+              
+              <RuleBoard rule={rule} />
+            </div>
+          ))}
+        </div>
       </div>
       
       {/* Inline styles for animations */}

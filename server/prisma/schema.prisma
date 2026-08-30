@@ -38,6 +38,8 @@ model User {
   passwordHash         String?                       // null for OAuth-only users
   avatarUrl            String?
   rating               Int            @default(1200)
+  bestRating           Int?           @default(1200)
+  bestRatingDate       DateTime?
   coinsBalance         Int            @default(0)   // Chess Coins earned from daily challenges etc.
   dailyChallengeStreak Int            @default(0)   // Consecutive days completing the daily challenge
   showOnlineStatus     Boolean        @default(true)

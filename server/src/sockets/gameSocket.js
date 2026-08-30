@@ -135,15 +135,30 @@ async function finalizeGame(io, gameId, game, status, reason) {
         whiteDelta = Math.round(K * (Sw - Ew));
         blackDelta = Math.round(K * (Sb - Eb));
         
+        const postWhiteRating = Rw + whiteDelta;
+        const postBlackRating = Rb + blackDelta;
+        
+        const whiteData = { rating: { increment: whiteDelta } };
+        if (whiteUser.bestRating === null || postWhiteRating > whiteUser.bestRating) {
+          whiteData.bestRating = postWhiteRating;
+          whiteData.bestRatingDate = new Date();
+        }
+        
+        const blackData = { rating: { increment: blackDelta } };
+        if (blackUser.bestRating === null || postBlackRating > blackUser.bestRating) {
+          blackData.bestRating = postBlackRating;
+          blackData.bestRatingDate = new Date();
+        }
+
         // Update users
         await prisma.user.update({
           where: { id: whiteUser.id },
-          data: { rating: { increment: whiteDelta } }
+          data: whiteData
         });
         
         await prisma.user.update({
           where: { id: blackUser.id },
-          data: { rating: { increment: blackDelta } }
+          data: blackData
         });
       }
     } catch (err) {

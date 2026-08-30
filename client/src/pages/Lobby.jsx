@@ -15,16 +15,16 @@ const PRESETS = [
 ];
 
 const AI_BOTS = [
-  { label: 'Rookie Sam', rating: 400, style: 'Beginner', difficulty: 1, color: '#3b82f6', quote: "I'm still learning how the knight moves." },
-  { label: 'Pawn Pusher Vik', rating: 700, style: 'Cautious', difficulty: 2, color: '#8b5cf6', quote: "I like to keep things solid and safe." },
-  { label: 'Club Regular Dee', rating: 1000, style: 'Balanced', difficulty: 3, color: '#10b981', quote: "Ready for a friendly game at the club." },
-  { label: 'Tactical Rae', rating: 1300, style: 'Tactical', difficulty: 4, color: '#f59e0b', quote: "I don't like quiet positions." },
-  { label: 'Iron Wall Otto', rating: 1600, style: 'Defensive', difficulty: 5, color: '#64748b', quote: "Good luck breaking through." },
-  { label: 'Blitz Nova', rating: 1900, style: 'Aggressive', difficulty: 6, color: '#ef4444', quote: "Speed and attacks are all I need." },
-  { label: 'Endgame Elias', rating: 2200, style: 'Precise', difficulty: 7, color: '#0ea5e9', quote: "The real game begins when the queens come off." },
-  { label: 'Positional Wren', rating: 2450, style: 'Positional', difficulty: 8, color: '#14b8a6', quote: "Every pawn move creates a weakness." },
-  { label: 'Chaos Theory', rating: 2650, style: 'Unpredictable', difficulty: 9, color: '#f43f5e', quote: "Order is an illusion. Embrace the chaos." },
-  { label: 'The Oracle', rating: 2850, style: 'Universal', difficulty: 10, color: '#eab308', quote: "I see 20 moves deep. Your defeat is inevitable." },
+  { label: 'Rookie Sam', rating: 400, style: 'Beginner', difficulty: 1, color: '#3b82f6', avatar: '/avatars/bot_rookie_sam_1788108534537.jpg', quote: "I'm still learning how the knight moves." },
+  { label: 'Pawn Pusher Vik', rating: 700, style: 'Cautious', difficulty: 2, color: '#8b5cf6', avatar: '/avatars/bot_pawn_vik_1788108546050.jpg', quote: "I like to keep things solid and safe." },
+  { label: 'Club Regular Dee', rating: 1000, style: 'Balanced', difficulty: 3, color: '#10b981', avatar: '/avatars/bot_club_dee_1788108557391.jpg', quote: "Ready for a friendly game at the club." },
+  { label: 'Tactical Rae', rating: 1300, style: 'Tactical', difficulty: 4, color: '#f59e0b', avatar: '/avatars/bot_tactical_rae_1788108582334.jpg', quote: "I don't like quiet positions." },
+  { label: 'Iron Wall Otto', rating: 1600, style: 'Defensive', difficulty: 5, color: '#64748b', avatar: '/avatars/bot_iron_otto_1788108598243.jpg', quote: "Good luck breaking through." },
+  { label: 'Blitz Nova', rating: 1900, style: 'Aggressive', difficulty: 6, color: '#ef4444', avatar: '/avatars/bot_blitz_nova_1788108610527.jpg', quote: "Speed and attacks are all I need." },
+  { label: 'Endgame Elias', rating: 2200, style: 'Precise', difficulty: 7, color: '#0ea5e9', avatar: '/avatars/bot_endgame_elias_1788108620972.jpg', quote: "The real game begins when the queens come off." },
+  { label: 'Positional Wren', rating: 2450, style: 'Positional', difficulty: 8, color: '#14b8a6', avatar: '/avatars/bot_positional_wren_1788108631085.jpg', quote: "Every pawn move creates a weakness." },
+  { label: 'Chaos Theory', rating: 2650, style: 'Unpredictable', difficulty: 9, color: '#f43f5e', avatar: '/avatars/bot_chaos_theory_1788108644422.jpg', quote: "Order is an illusion. Embrace the chaos." },
+  { label: 'The Oracle', rating: 2850, style: 'Universal', difficulty: 10, color: '#eab308', avatar: '/avatars/bot_oracle_1788108656227.jpg', quote: "I see 20 moves deep. Your defeat is inevitable." },
 ];
 
 // --- Inline SVG sparkline (no library needed) ---
@@ -136,7 +136,7 @@ export default function Lobby() {
         .then(res => res.json())
         .then(data => {
           if (data.stats) {
-            setUserStats(data.stats);
+            setUserStats({ ...data.stats, rating: data.user?.rating });
             setRecentGames(data.recentGames || []);
           }
         })
@@ -615,7 +615,7 @@ export default function Lobby() {
                 <div style={{ marginBottom: '1.25rem' }}>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.3rem' }}>Current Rating</div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem' }}>
-                    <div style={{ fontSize: '2.25rem', fontWeight: '900', color: 'var(--text-primary)', lineHeight: 1 }}>{user?.rating || 1200}</div>
+                    <div style={{ fontSize: '2.25rem', fontWeight: '900', color: 'var(--text-primary)', lineHeight: 1 }}>{userStats.rating ?? user?.rating ?? 1200}</div>
                     <div style={{ fontSize: '1rem', fontWeight: 'bold', color: computedStats.deltaColor }}>
                       {computedStats.deltaPrefix}{computedStats.ratingDelta !== 0 ? computedStats.ratingDelta : '±0'}
                     </div>
@@ -638,7 +638,7 @@ export default function Lobby() {
                   <div className="surface-2" style={{ padding: '0.75rem', borderRadius: '8px' }}>
                     <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.25rem' }}>Games Played</div>
                     <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{userStats.total}</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>all time</div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>ranked matches</div>
                   </div>
 
                   {/* Best Rating */}
@@ -690,6 +690,12 @@ export default function Lobby() {
                     )}
                   </div>
                 </div>
+
+                {userStats.casualTotal > 0 && (
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '1rem' }}>
+                    + {userStats.casualTotal} casual / AI {userStats.casualTotal === 1 ? 'game' : 'games'} played
+                  </div>
+                )}
 
                 {/* View Full Stats link */}
                 <Link
@@ -863,9 +869,19 @@ export default function Lobby() {
                                   <div style={{
                                     width: '40px', height: '40px', borderRadius: '50%', background: bot.color,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontWeight: 'bold', fontSize: '1.2rem', color: 'white', flexShrink: 0
+                                    fontWeight: 'bold', fontSize: '1.2rem', color: 'white', flexShrink: 0,
+                                    overflow: 'hidden', position: 'relative'
                                   }}>
-                                    {bot.label.charAt(0)}
+                                    <span style={{ position: 'absolute' }}>{bot.label.charAt(0)}</span>
+                                    {bot.avatar && (
+                                      <img 
+                                        src={bot.avatar} 
+                                        alt={bot.label} 
+                                        className="bot-avatar-img"
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'relative', zIndex: 1 }} 
+                                        onError={(e) => { e.target.style.display = 'none'; }}
+                                      />
+                                    )}
                                   </div>
                                   <div style={{ flex: 1 }}>
                                     <div style={{ fontWeight: 'bold', fontSize: '1.05rem', color: 'var(--text-primary)', marginBottom: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
