@@ -1,5 +1,6 @@
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Logo from '../components/Logo';
 import DecorativeBoard from '../components/DecorativeBoard';
 import { Zap, Bot, Users, Trophy, Play, ArrowRight } from 'lucide-react';
 
@@ -46,16 +47,7 @@ export default function Home() {
         position: 'relative',
         zIndex: 10
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{
-            width: '36px', height: '36px',
-            background: 'var(--accent-color)',
-            borderRadius: '6px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: 'bold', fontSize: '0.9rem'
-          }}>CH</div>
-          <span style={{ fontSize: '1.4rem', fontWeight: '700', letterSpacing: '1px' }}>Chess</span>
-        </div>
+        <Logo />
         <div style={{ display: 'flex', gap: '0.75rem' }}>
           <Link to="/login" style={{
             padding: '0.6rem 1.5rem',

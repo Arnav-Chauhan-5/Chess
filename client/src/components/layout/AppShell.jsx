@@ -5,6 +5,7 @@ import { useSocket } from '../../hooks/useSocket';
 import { useOutsideClick } from '../../hooks/useOutsideClick';
 import { useSettings } from '../../context/SettingsContext';
 import { Play, Trophy, History, User as UserIcon, Settings, LogOut, Menu, X, ChevronDown, Eye, Users, Bell, BookOpen, Moon, Monitor, ShoppingBag } from 'lucide-react';
+import Logo from '../Logo';
 
 export default function AppShell({ children }) {
   const { user, token, logout } = useAuth();
@@ -217,10 +218,7 @@ export default function AppShell({ children }) {
       >
         <div style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', color: 'inherit' }}>
-            <div style={{ width: '32px', height: '32px', background: 'var(--accent-color)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-              CH
-            </div>
-            <span style={{ fontSize: '1.25rem', fontWeight: 'bold', letterSpacing: '1px' }}>Chess</span>
+            <Logo size="sm" />
           </Link>
           <button className="mobile-close" onClick={() => setSidebarOpen(false)} style={{ marginLeft: 'auto', display: 'none', background: 'none', border: 'none', color: 'white' }}>
             <X size={24} />

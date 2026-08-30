@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Logo from '../components/Logo';
 import { UserPlus, Crown } from 'lucide-react';
 
 export default function Register() {
@@ -46,12 +47,7 @@ export default function Register() {
       }}>
         
         {/* App Branding */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-          <div style={{ width: '40px', height: '40px', background: 'var(--accent-color)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '1.2rem', color: 'white', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)' }}>
-            CH
-          </div>
-          <span style={{ fontSize: '1.5rem', fontWeight: 'bold', letterSpacing: '1px' }}>Chess</span>
-        </div>
+        <Logo size="lg" style={{ marginBottom: '1.5rem' }} />
 
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h1 style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>Create Account</h1>
