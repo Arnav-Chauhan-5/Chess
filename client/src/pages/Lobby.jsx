@@ -55,7 +55,7 @@ function RatingSparkline({ recentGames, userId }) {
 
   const d = points.map((v, i) => `${i === 0 ? 'M' : 'L'} ${toX(i).toFixed(1)} ${toY(v).toFixed(1)}`).join(' ');
   const trend = points[points.length - 1] >= points[0];
-  const strokeColor = trend ? '#10b981' : '#ef4444';
+  const strokeColor = trend ? 'var(--stats-win)' : 'var(--stats-loss)';
 
   return (
     <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', marginTop: '0.5rem' }}>
@@ -348,20 +348,20 @@ export default function Lobby() {
 
   const tabStyle = (isActive) => ({
     flex: 1,
-    padding: '0.85rem 1.5rem',
-    background: isActive ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
+    padding: '10px 16px',
+    background: isActive ? 'rgba(59,76,122,0.06)' : 'transparent',
     border: 'none',
-    borderBottom: isActive ? '2px solid var(--accent-color)' : '2px solid transparent',
-    color: isActive ? 'var(--accent-color)' : 'var(--text-secondary)',
+    borderBottom: isActive ? '2px solid var(--primary)' : '2px solid transparent',
+    color: isActive ? 'var(--primary)' : 'var(--on-surface-variant)',
     cursor: 'pointer',
-    fontWeight: isActive ? '700' : '500',
-    fontSize: '1rem',
-    fontFamily: 'inherit',
-    transition: 'all 0.2s',
+    fontWeight: isActive ? '600' : '400',
+    fontSize: '13px',
+    fontFamily: 'var(--font-sans)',
+    transition: 'background 0.15s ease, color 0.15s ease, border-color 0.15s ease',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '0.5rem'
+    gap: '6px',
   });
 
   const getGreeting = () => {
@@ -397,52 +397,49 @@ export default function Lobby() {
 
     const winRate = userStats.total > 0 ? Math.round((userStats.wins / userStats.total) * 100) : 0;
     const deltaPrefix = ratingDelta > 0 ? '▲ +' : ratingDelta < 0 ? '▼ ' : '';
-    const deltaColor = ratingDelta > 0 ? '#10b981' : ratingDelta < 0 ? 'var(--danger)' : 'var(--text-secondary)';
+    const deltaColor = ratingDelta > 0 ? 'var(--stats-win)' : ratingDelta < 0 ? 'var(--stats-loss)' : 'var(--on-surface-variant)';
 
     return { ratingDelta, deltaPrefix, deltaColor, currentStreak, streakType, winRate };
   })();
 
   return (
-    <div style={{ padding: '1rem 1.25rem', maxWidth: '1600px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+    <div style={{ padding: '16px', maxWidth: '1600px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Greeting Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 'bold', margin: 0 }}>
+          <h1 style={{ fontSize: '32px', fontWeight: '600', margin: 0, letterSpacing: '-0.02em', color: 'var(--on-surface)', fontFamily: 'var(--font-sans)' }}>
             {getGreeting()}, {user?.username || 'Player'}
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginTop: '0.25rem' }}>Ready for your next game?</p>
+          <p style={{ color: 'var(--on-surface-variant)', fontSize: '16px', marginTop: '4px' }}>Ready for your next game?</p>
         </div>
-        <div style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', marginBottom: '0.25rem' }}>
-          <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }}></span>
+        <div style={{ color: 'var(--on-surface-variant)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', marginBottom: '2px' }}>
+          <span style={{ display: 'inline-block', width: '7px', height: '7px', borderRadius: '50%', background: 'var(--stats-win)', flexShrink: 0 }}></span>
           {onlineCount} Players Online
         </div>
       </div>
 
       {/* ── TOP ROW: Three quick-action cards ── */}
-      <div className="lobby-action-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+      <div className="lobby-action-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
         {[
           {
             id: 'new-game',
-            icon: <Play size={28} />,
+            icon: <Play size={22} />,
             title: 'New Game',
             subtitle: 'Jump into a rated match',
-            gradient: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
             onClick: () => activateTab('player', 'random'),
           },
           {
             id: 'vs-bot',
-            icon: <Bot size={28} />,
+            icon: <Bot size={22} />,
             title: 'Play vs Bot',
             subtitle: 'Choose your AI opponent',
-            gradient: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
             onClick: () => activateTab('ai'),
           },
           {
             id: 'vs-friend',
-            icon: <UserPlus size={28} />,
+            icon: <UserPlus size={22} />,
             title: 'Play vs Friend',
             subtitle: 'Challenge or invite a friend',
-            gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
             onClick: () => navigate('/friends'),
           },
         ].map(card => (
@@ -452,86 +449,69 @@ export default function Lobby() {
             onClick={card.onClick}
             className="lobby-action-card"
             style={{
-              background: 'var(--surface-1)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '12px',
-              padding: '1.25rem 1.5rem',
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: '4px',
+              padding: '14px 16px',
               cursor: 'pointer',
               textAlign: 'left',
               display: 'flex',
               alignItems: 'center',
-              gap: '1rem',
-              transition: 'all 0.2s',
-              fontFamily: 'inherit',
-              position: 'relative',
-              overflow: 'hidden',
+              gap: '12px',
+              transition: 'background 0.15s ease, border-color 0.15s ease',
+              fontFamily: 'var(--font-sans)',
             }}
           >
-            {/* Coloured icon badge */}
-            <div style={{
-              width: '52px', height: '52px', borderRadius: '12px',
-              background: card.gradient,
+            {/* Icon badge */}
+            <div className="action-icon" style={{
+              width: '40px', height: '40px', borderRadius: '4px',
+              background: 'var(--primary)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'white', flexShrink: 0,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+              color: 'var(--on-primary)', flexShrink: 0,
+              transition: 'background 0.15s ease, color 0.15s ease'
             }}>
               {card.icon}
             </div>
             <div>
-              <div style={{ fontWeight: '700', fontSize: '1.05rem', color: 'var(--text-primary)', marginBottom: '0.2rem' }}>{card.title}</div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{card.subtitle}</div>
+              <div className="action-title" style={{ fontWeight: '600', fontSize: '14px', color: 'var(--on-surface)', marginBottom: '2px', transition: 'color 0.15s ease' }}>{card.title}</div>
+              <div className="action-subtitle" style={{ fontSize: '13px', color: 'var(--on-surface-variant)', transition: 'color 0.15s ease' }}>{card.subtitle}</div>
             </div>
-            {/* Subtle glow accent in top-right corner */}
-            <div style={{
-              position: 'absolute', top: 0, right: 0,
-              width: '80px', height: '80px',
-              background: card.gradient,
-              opacity: 0.07,
-              borderRadius: '0 12px 0 80px',
-              pointerEvents: 'none',
-            }} />
           </button>
         ))}
       </div>
 
       {/* ── MAIN 3-COLUMN GRID ── */}
-      <div className="lobby-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(auto, 480px) 1fr 1.1fr', gap: '1.75rem', alignItems: 'start' }}>
+      <div className="lobby-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(auto, 440px) 1fr 1.1fr', gap: '16px', alignItems: 'start' }}>
 
         {/* ════ LEFT COLUMN: Board Preview ════ */}
-        <div className="lobby-board" style={{ position: 'sticky', top: '90px', maxWidth: '480px', width: '100%', margin: '0 auto' }}>
-          {/* Soft radial glow behind the board */}
+        <div className="lobby-board" style={{ position: 'sticky', top: '76px', maxWidth: '440px', width: '100%', margin: '0 auto' }}>
           <div style={{ position: 'relative' }}>
-            <div style={{
-              position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-              width: '120%', height: '120%', background: 'radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 60%)',
-              zIndex: -1, pointerEvents: 'none'
-            }}></div>
 
-            {/* "Player" rows above/below board with static time badge */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
-              <div style={{ width: '36px', height: '36px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Users size={20} color="var(--text-secondary)" />
+            {/* Opponent row above board */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', padding: '8px', background: 'rgba(27,27,31,0.04)', borderRadius: '4px' }}>
+              <div style={{ width: '32px', height: '32px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Users size={17} color="var(--on-surface-variant)" />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>Opponent</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Waiting for game...</div>
+                <div style={{ fontWeight: '500', fontSize: '14px', color: 'var(--on-surface)' }}>Opponent</div>
+                <div style={{ fontSize: '12px', color: 'var(--on-surface-variant)' }}>Waiting for game...</div>
               </div>
               {/* Static time badge — NOT a countdown */}
               <div style={{
-                background: 'rgba(255,255,255,0.07)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '6px',
-                padding: '0.3rem 0.65rem',
-                fontSize: '0.8rem',
-                fontWeight: '700',
-                color: 'var(--text-secondary)',
-                letterSpacing: '0.3px',
+                background: 'var(--bg)',
+                border: '1px solid var(--border)',
+                borderRadius: '4px',
+                padding: '4px 8px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '13px',
+                fontWeight: '500',
+                color: 'var(--on-surface-variant)',
                 fontVariantNumeric: 'tabular-nums',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.25rem'
+                gap: '4px',
               }}>
-                <Clock size={14} />
+                <Clock size={12} />
                 {aiTimePreset.split('+')[0]}:00
               </div>
             </div>
@@ -539,30 +519,30 @@ export default function Lobby() {
             <DecorativeBoard autoplay={false} />
 
             {/* Your row below board */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.75rem' }}>
-              <div style={{ width: '36px', height: '36px', background: 'var(--accent-color)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '1rem', color: 'white' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', padding: '8px', background: 'rgba(27,27,31,0.04)', borderRadius: '4px' }}>
+              <div style={{ width: '32px', height: '32px', background: 'var(--primary)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '600', fontSize: '14px', color: 'var(--on-primary)' }}>
                 {user?.username?.charAt(0)?.toUpperCase() || 'Y'}
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>{user?.username || 'You'}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{user?.rating || 1200}</div>
+                <div style={{ fontWeight: '500', fontSize: '14px', color: 'var(--on-surface)' }}>{user?.username || 'You'}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--on-surface-variant)', fontVariantNumeric: 'tabular-nums' }}>{user?.rating || 1200}</div>
               </div>
               {/* Matching static time badge */}
               <div style={{
-                background: 'rgba(255,255,255,0.07)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '6px',
-                padding: '0.3rem 0.65rem',
-                fontSize: '0.8rem',
-                fontWeight: '700',
-                color: 'var(--text-secondary)',
-                letterSpacing: '0.3px',
+                background: 'var(--bg)',
+                border: '1px solid var(--border)',
+                borderRadius: '4px',
+                padding: '4px 8px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '13px',
+                fontWeight: '500',
+                color: 'var(--on-surface-variant)',
                 fontVariantNumeric: 'tabular-nums',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.25rem'
+                gap: '4px',
               }}>
-                <Clock size={14} />
+                <Clock size={12} />
                 {aiTimePreset.split('+')[0]}:00
               </div>
             </div>
@@ -570,11 +550,11 @@ export default function Lobby() {
 
           {/* Live Games below the board */}
           {liveGames.length > 0 && (
-            <div className="glass-panel animate-fade-in" style={{ padding: '1.25rem', marginTop: '1.5rem' }}>
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', fontSize: '1rem' }}>
-                <Eye size={16} color="var(--accent-color)" /> Live Games
+            <div className="glass-panel animate-fade-in" style={{ padding: '12px', marginTop: '12px' }}>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: '600', color: 'var(--on-surface)' }}>
+                <Eye size={14} color="var(--primary)" /> Live Games
               </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 {liveGames.map((game, i) => (
                   <Link
                     key={i}
@@ -584,15 +564,16 @@ export default function Lobby() {
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      padding: '0.8rem 1rem',
+                      padding: '8px 10px',
                       textDecoration: 'none',
-                      color: 'var(--text-primary)',
-                      transition: 'all 0.2s',
-                      fontSize: '0.85rem'
+                      color: 'var(--on-surface)',
+                      transition: 'background 0.15s ease',
+                      fontSize: '13px',
+                      borderRadius: '4px',
                     }}
                   >
                     <span><strong>{game.whiteUsername}</strong> vs <strong>{game.blackUsername}</strong></span>
-                    <span style={{ color: 'var(--accent-color)', fontWeight: 'bold', fontSize: '0.8rem' }}>Watch</span>
+                    <span style={{ color: 'var(--primary)', fontWeight: '600', fontSize: '12px' }}>Watch</span>
                   </Link>
                 ))}
               </div>
@@ -601,55 +582,64 @@ export default function Lobby() {
         </div>
 
         {/* ════ MIDDLE COLUMN: Your Stats Card ════ */}
-        <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div className="glass-panel" style={{ padding: '1.5rem' }}>
+        <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className="glass-panel" style={{ padding: '16px' }}>
             {/* Card header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-              <BarChart2 size={18} color="var(--accent-color)" />
-              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '700' }}>Your Stats</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '14px' }}>
+              <BarChart2 size={15} color="var(--primary)" />
+              <h3 className="label-caps" style={{ margin: 0, color: 'var(--on-surface-variant)' }}>Your Stats</h3>
             </div>
 
             {userStats && computedStats ? (
               <>
                 {/* Rating + delta */}
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.3rem' }}>Current Rating</div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem' }}>
-                    <div style={{ fontSize: '2.25rem', fontWeight: '900', color: 'var(--text-primary)', lineHeight: 1 }}>{userStats.rating ?? user?.rating ?? 1200}</div>
-                    <div style={{ fontSize: '1rem', fontWeight: 'bold', color: computedStats.deltaColor }}>
+                <div style={{ marginBottom: '14px' }}>
+                  <div className="label-caps" style={{ marginBottom: '4px' }}>Current Rating</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '32px', fontWeight: '600', color: 'var(--on-surface)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+                      {userStats.rating ?? user?.rating ?? 1200}
+                    </div>
+                    <div style={{ fontSize: '14px', fontWeight: '600', color: computedStats.deltaColor, fontFamily: 'var(--font-mono)' }}>
                       {computedStats.deltaPrefix}{computedStats.ratingDelta !== 0 ? computedStats.ratingDelta : '±0'}
                     </div>
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>vs last 20 games</div>
+                  <div style={{ fontSize: '12px', color: 'var(--on-surface-variant)', marginTop: '2px' }}>vs last 20 games</div>
                   {/* Sparkline */}
                   <RatingSparkline recentGames={recentGames} userId={user?.id} />
                 </div>
 
                 {/* Grid of stat cells */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem', marginBottom: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '12px' }}>
                   {/* Win Rate */}
-                  <div className="surface-2" style={{ padding: '0.75rem', borderRadius: '8px' }}>
-                    <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.25rem' }}>Win Rate</div>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{computedStats.winRate}%</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>{userStats.wins}W {userStats.losses}L {userStats.draws}D</div>
+                  <div className="surface-2" style={{ padding: '10px 12px' }}>
+                    <div className="label-caps" style={{ marginBottom: '4px' }}>Win Rate</div>
+                    <div style={{ fontSize: '20px', fontWeight: '600', color: 'var(--on-surface)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>{computedStats.winRate}%</div>
+                    <div style={{ fontSize: '12px', color: 'var(--on-surface-variant)', marginTop: '2px' }}>
+                      <span style={{ color: 'var(--stats-win)', fontWeight: '500' }}>{userStats.wins}W</span>
+                      {' '}
+                      <span style={{ color: 'var(--stats-loss)', fontWeight: '500' }}>{userStats.losses}L</span>
+                      {' '}
+                      <span style={{ color: 'var(--stats-draw)', fontWeight: '500' }}>{userStats.draws}D</span>
+                    </div>
                   </div>
 
                   {/* Games Played */}
-                  <div className="surface-2" style={{ padding: '0.75rem', borderRadius: '8px' }}>
-                    <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.25rem' }}>Games Played</div>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{userStats.total}</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>ranked matches</div>
+                  <div className="surface-2" style={{ padding: '10px 12px' }}>
+                    <div className="label-caps" style={{ marginBottom: '4px' }}>Games Played</div>
+                    <div style={{ fontSize: '20px', fontWeight: '600', color: 'var(--on-surface)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>{userStats.total}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--on-surface-variant)', marginTop: '2px' }}>ranked matches</div>
                   </div>
 
                   {/* Best Rating */}
-                  <div className="surface-2" style={{ padding: '0.75rem', borderRadius: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.68rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.25rem' }}>
-                      <Trophy size={10} /> Best Rating
+                  <div className="surface-2" style={{ padding: '10px 12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                      <Trophy size={9} color="var(--stats-gold)" />
+                      <span className="label-caps">Best Rating</span>
                     </div>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: userStats.bestRating ? '#f59e0b' : 'var(--text-secondary)' }}>
+                    <div style={{ fontSize: '20px', fontWeight: '600', color: userStats.bestRating ? 'var(--stats-gold)' : 'var(--on-surface-variant)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
                       {userStats.bestRating ?? '—'}
                     </div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--on-surface-variant)', marginTop: '2px' }}>
                       {userStats.bestRatingDate
                         ? new Date(userStats.bestRatingDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
                         : 'no data yet'}
@@ -657,33 +647,33 @@ export default function Lobby() {
                   </div>
 
                   {/* Current Streak */}
-                  <div className="surface-2" style={{ padding: '0.75rem', borderRadius: '8px' }}>
-                    <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.25rem' }}>Streak</div>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.25rem', color: computedStats.streakType === 'W' && computedStats.currentStreak >= 3 ? '#f59e0b' : computedStats.streakType === 'L' && computedStats.currentStreak >= 3 ? 'var(--danger)' : 'var(--text-primary)' }}>
+                  <div className="surface-2" style={{ padding: '10px 12px' }}>
+                    <div className="label-caps" style={{ marginBottom: '4px' }}>Streak</div>
+                    <div style={{ fontSize: '20px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: computedStats.streakType === 'W' && computedStats.currentStreak >= 3 ? 'var(--stats-gold)' : computedStats.streakType === 'L' && computedStats.currentStreak >= 3 ? 'var(--stats-loss)' : 'var(--on-surface)' }}>
                       {computedStats.streakType === 'W' && computedStats.currentStreak >= 3 && <Flame size={16} />}
                       {computedStats.currentStreak} {computedStats.streakType || 'W'}
                     </div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>current</div>
+                    <div style={{ fontSize: '12px', color: 'var(--on-surface-variant)', marginTop: '2px' }}>current</div>
                   </div>
                 </div>
 
                 {/* Recent Form dots */}
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.4rem' }}>Recent Form</div>
-                  <div style={{ display: 'flex', gap: '0.3rem' }}>
+                <div style={{ marginBottom: '14px' }}>
+                  <div className="label-caps" style={{ marginBottom: '6px' }}>Recent Form</div>
+                  <div style={{ display: 'flex', gap: '4px' }}>
                     {recentGames.length === 0 ? (
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>—</span>
+                      <span style={{ fontSize: '13px', color: 'var(--on-surface-variant)' }}>—</span>
                     ) : (
                       recentGames.slice(0, 10).map((game, i) => {
                         const isWhite = game.whiteId === user?.id;
-                        let resultColor = '#9ca3af';
-                        if (game.status === 'WHITE_WON') resultColor = isWhite ? '#10b981' : 'var(--danger)';
-                        if (game.status === 'BLACK_WON') resultColor = !isWhite ? '#10b981' : 'var(--danger)';
+                        let resultColor = 'var(--stats-draw)';
+                        if (game.status === 'WHITE_WON') resultColor = isWhite ? 'var(--stats-win)' : 'var(--stats-loss)';
+                        if (game.status === 'BLACK_WON') resultColor = !isWhite ? 'var(--stats-win)' : 'var(--stats-loss)';
                         return (
                           <div
                             key={i}
                             title={game.status}
-                            style={{ width: '14px', height: '14px', borderRadius: '3px', background: resultColor, flexShrink: 0 }}
+                            style={{ width: '12px', height: '12px', borderRadius: '2px', background: resultColor, flexShrink: 0 }}
                           />
                         );
                       })
@@ -692,7 +682,7 @@ export default function Lobby() {
                 </div>
 
                 {userStats.casualTotal > 0 && (
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '1rem' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--on-surface-variant)', textAlign: 'center', marginBottom: '12px' }}>
                     + {userStats.casualTotal} casual / AI {userStats.casualTotal === 1 ? 'game' : 'games'} played
                   </div>
                 )}
@@ -704,26 +694,26 @@ export default function Lobby() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '0.4rem',
+                    gap: '5px',
                     width: '100%',
-                    padding: '0.65rem',
-                    borderRadius: '8px',
-                    border: '1px solid var(--border-color)',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    border: '1px solid var(--border)',
                     background: 'transparent',
-                    color: 'var(--accent-color)',
+                    color: 'var(--primary)',
                     textDecoration: 'none',
-                    fontSize: '0.875rem',
+                    fontSize: '13px',
                     fontWeight: '600',
-                    transition: 'all 0.2s',
+                    transition: 'background 0.15s ease',
                   }}
                   className="view-stats-link"
                 >
-                  <TrendingUp size={15} />
+                  <TrendingUp size={14} />
                   View Full Stats
                 </Link>
               </>
             ) : (
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', textAlign: 'center', padding: '2rem 0' }}>
+              <div style={{ color: 'var(--on-surface-variant)', fontSize: '13px', textAlign: 'center', padding: '24px 0' }}>
                 {user ? 'Loading stats…' : 'Sign in to see your stats'}
               </div>
             )}
@@ -731,26 +721,26 @@ export default function Lobby() {
 
           {/* ── Daily Challenge card ── */}
           {user && (
-            <div className="glass-panel animate-fade-in" style={{ padding: '1.25rem' }}>
+            <div className="glass-panel animate-fade-in" style={{ padding: '14px', position: 'relative' }}>
               {/* Header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{
-                    width: '30px', height: '30px', borderRadius: '8px',
+                    width: '28px', height: '28px', borderRadius: '4px',
                     background: dailyChallenge?.completed
-                      ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
-                      : 'rgba(245,158,11,0.15)',
+                      ? 'var(--stats-gold)'
+                      : 'rgba(184,134,11,0.1)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0,
                     transition: 'all 0.4s',
                   }}>
-                    <Gift size={16} color={dailyChallenge?.completed ? 'white' : '#f59e0b'} />
+                    <Gift size={15} color={dailyChallenge?.completed ? 'white' : 'var(--stats-gold)'} />
                   </div>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '700', color: 'var(--text-primary)' }}>
+                    <h3 style={{ margin: 0, fontSize: '13px', fontWeight: '600', color: 'var(--on-surface)' }}>
                       Daily Challenge
                     </h3>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--on-surface-variant)', marginTop: '2px' }}>
                       {dailyChallenge?.completed
                         ? '🎉 Challenge complete — reward awaiting!'
                         : 'Play a game to earn your daily reward!'}
@@ -758,26 +748,27 @@ export default function Lobby() {
                   </div>
                 </div>
                 {/* Fraction and Streak */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
                   <div style={{
-                    fontSize: '1rem', fontWeight: '800',
-                    color: dailyChallenge?.completed ? '#f59e0b' : 'var(--text-secondary)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '14px', fontWeight: '600',
+                    color: dailyChallenge?.completed ? 'var(--stats-gold)' : 'var(--on-surface-variant)',
                     fontVariantNumeric: 'tabular-nums',
                     transition: 'color 0.4s',
                   }}>
                     {dailyChallenge?.completed ? '1' : '0'}<span style={{ opacity: 0.5, fontWeight: '400' }}>/1</span>
                   </div>
-                  
+
                   {/* Streak Indicator */}
-                  <div style={{ 
-                    fontSize: '0.7rem', 
-                    color: (dailyChallenge?.streak || 0) > 0 ? '#fbbf24' : 'var(--text-secondary)', 
-                    fontWeight: '600', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '0.2rem',
+                  <div style={{
+                    fontSize: '11px',
+                    color: (dailyChallenge?.streak || 0) > 0 ? 'var(--stats-gold)' : 'var(--on-surface-variant)',
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '2px',
                     transition: 'color 0.4s',
-                    opacity: (dailyChallenge?.streak || 0) > 0 ? 1 : 0.7
+                    opacity: (dailyChallenge?.streak || 0) > 0 ? 1 : 0.7,
                   }}>
                     {(dailyChallenge?.streak || 0) > 0 ? '🔥' : '⏳'} {dailyChallenge?.streak || 0} {(dailyChallenge?.streak || 0) === 1 ? 'day' : 'days'} streak
                   </div>
@@ -786,18 +777,17 @@ export default function Lobby() {
 
               {/* Progress bar */}
               <div style={{
-                height: '6px',
-                borderRadius: '3px',
-                background: 'rgba(255,255,255,0.08)',
+                height: '4px',
+                borderRadius: '2px',
+                background: 'rgba(27,27,31,0.08)',
                 overflow: 'hidden',
               }}>
                 <div style={{
                   height: '100%',
-                  borderRadius: '3px',
+                  borderRadius: '2px',
                   width: dailyChallenge?.completed ? '100%' : '0%',
-                  background: 'linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)',
+                  background: 'var(--stats-gold)',
                   transition: 'width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                  boxShadow: dailyChallenge?.completed ? '0 0 8px rgba(245,158,11,0.6)' : 'none',
                 }} />
               </div>
 
@@ -805,9 +795,9 @@ export default function Lobby() {
               {!dailyChallenge && (
                 <div style={{
                   position: 'absolute', inset: 0, borderRadius: 'inherit',
-                  background: 'rgba(0,0,0,0.15)', display: 'flex',
+                  background: 'rgba(237,239,241,0.6)', display: 'flex',
                   alignItems: 'center', justifyContent: 'center',
-                  fontSize: '0.8rem', color: 'var(--text-secondary)',
+                  fontSize: '12px', color: 'var(--on-surface-variant)',
                 }}>
                 </div>
               )}
@@ -821,7 +811,7 @@ export default function Lobby() {
 
           {/* Tab Buttons */}
           <div className="glass-panel" style={{ padding: 0, overflow: 'hidden', marginBottom: '0' }}>
-            <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)' }}>
+            <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
               <button style={tabStyle(activeTab === 'ai')} onClick={() => setActiveTab('ai')}>
                 <Bot size={18} /> Play vs Bots
               </button>
@@ -830,7 +820,7 @@ export default function Lobby() {
               </button>
             </div>
 
-            <div style={{ padding: '1.5rem' }}>
+            <div style={{ padding: '12px' }}>
 
               {/* TAB 1: vs AI */}
               {activeTab === 'ai' && (
@@ -852,24 +842,24 @@ export default function Lobby() {
                                   display: 'flex',
                                   justifyContent: 'space-between',
                                   alignItems: 'center',
-                                  background: isExpanded ? 'var(--surface-2)' : 'transparent',
-                                  border: 'none',
-                                  padding: '1rem 1.25rem',
-                                  height: '84px',
+                                  background: isExpanded ? 'var(--bg)' : 'transparent',
+                                  border: isExpanded ? '1px solid var(--border)' : 'none',
+                                  padding: '10px 12px',
+                                  height: '80px',
                                   flexShrink: 0,
                                   boxSizing: 'border-box',
-                                  borderRadius: isExpanded ? '8px 8px 0 0' : '8px',
+                                  borderRadius: isExpanded ? '4px 4px 0 0' : '4px',
                                   cursor: 'pointer',
-                                  transition: 'all 0.2s',
+                                  transition: 'background 0.15s ease',
                                   textAlign: 'left',
-                                  width: '100%'
+                                  width: '100%',
                                 }}
                               >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
-                                  <div style={{
-                                    width: '40px', height: '40px', borderRadius: '50%', background: bot.color,
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                                  <div className="bot-avatar-inner" style={{
+                                    width: '38px', height: '38px', borderRadius: '50%', background: bot.color,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontWeight: 'bold', fontSize: '1.2rem', color: 'white', flexShrink: 0,
+                                    fontWeight: '600', fontSize: '1.1rem', color: 'white', flexShrink: 0,
                                     overflow: 'hidden', position: 'relative'
                                   }}>
                                     <span style={{ position: 'absolute' }}>{bot.label.charAt(0)}</span>
@@ -884,48 +874,50 @@ export default function Lobby() {
                                     )}
                                   </div>
                                   <div style={{ flex: 1 }}>
-                                    <div style={{ fontWeight: 'bold', fontSize: '1.05rem', color: 'var(--text-primary)', marginBottom: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <div style={{ fontWeight: '600', fontSize: '14px', color: 'var(--on-surface)', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                       {bot.label}
-                                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 'normal' }}>({bot.rating})</span>
+                                      <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--on-surface-variant)', fontSize: '12px', fontWeight: '400', fontVariantNumeric: 'tabular-nums' }}>({bot.rating})</span>
                                     </div>
-                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontStyle: 'italic', marginBottom: '0.4rem' }}>
+                                    <div style={{ fontSize: '12px', color: 'var(--on-surface-variant)', fontStyle: 'italic', marginBottom: '4px' }}>
                                       "{bot.quote}"
                                     </div>
                                     {/* Difficulty bar */}
-                                    <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden', maxWidth: '200px' }}>
+                                    <div style={{ width: '100%', height: '3px', background: 'rgba(27,27,31,0.1)', borderRadius: '2px', overflow: 'hidden', maxWidth: '160px' }}>
                                       <div style={{ width: `${Math.min(100, (bot.rating / 2850) * 100)}%`, height: '100%', background: bot.color, borderRadius: '2px' }} />
                                     </div>
                                   </div>
                                 </div>
-                                <div style={{ background: 'var(--accent-color)', color: 'white', padding: '0.4rem 1rem', borderRadius: '4px', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                                <div style={{ background: 'var(--primary)', color: 'var(--on-primary)', padding: '4px 10px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', transition: 'background 0.15s ease', fontFamily: 'var(--font-sans)' }}>
                                   {isExpanded ? '▾' : 'Play'}
                                 </div>
                               </button>
 
                               {isExpanded && (
                                 <div className="surface-2" style={{
-                                  borderTop: '1px solid var(--border-color)',
-                                  borderRadius: '0 0 8px 8px',
-                                  padding: '1rem 1.25rem',
+                                  borderTop: '1px solid var(--border)',
+                                  borderRadius: '0 0 4px 4px',
+                                  padding: '10px 12px',
                                   display: 'flex',
                                   flexDirection: 'column',
-                                  gap: '0.75rem'
+                                  gap: '8px',
                                 }}>
                                   {/* Time control */}
                                   <div>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Time Control</div>
-                                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                    <div className="label-caps" style={{ marginBottom: '6px' }}>Time Control</div>
+                                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                                       {PRESETS.map(p => (
                                         <button
                                           key={p.label}
                                           onClick={() => setAiTimePreset(p.label)}
                                           style={{
-                                            padding: '0.35rem 0.65rem', borderRadius: '4px', border: '1px solid',
-                                            borderColor: aiTimePreset === p.label ? 'var(--accent-color)' : 'rgba(255,255,255,0.15)',
-                                            background: aiTimePreset === p.label ? 'var(--accent-color)' : 'transparent',
-                                            color: 'white', cursor: 'pointer', fontSize: '0.85rem',
-                                            fontWeight: aiTimePreset === p.label ? 'bold' : 'normal',
-                                            transition: 'all 0.15s'
+                                            padding: '4px 8px', borderRadius: '4px', border: '1px solid',
+                                            borderColor: aiTimePreset === p.label ? 'var(--primary)' : 'var(--border)',
+                                            background: aiTimePreset === p.label ? 'var(--primary)' : 'var(--surface)',
+                                            color: aiTimePreset === p.label ? 'white' : 'var(--on-surface)',
+                                            cursor: 'pointer', fontSize: '12px',
+                                            fontWeight: aiTimePreset === p.label ? '600' : '400',
+                                            fontFamily: 'var(--font-sans)',
+                                            transition: 'all 0.15s',
                                           }}
                                         >{p.label}</button>
                                       ))}
@@ -934,11 +926,11 @@ export default function Lobby() {
 
                                   {/* Color choice */}
                                   <div>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Play As</div>
-                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                      <button onClick={() => handleStartAIGame(bot, 'white')} className="ai-color-btn" style={{ flex: 1, padding: '0.6rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.1)', color: 'white', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem', transition: 'all 0.15s' }}>♔ White</button>
-                                      <button onClick={() => handleStartAIGame(bot, 'random')} className="ai-color-btn" style={{ flex: 1, padding: '0.6rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem', transition: 'all 0.15s' }}>⚄ Random</button>
-                                      <button onClick={() => handleStartAIGame(bot, 'black')} className="ai-color-btn" style={{ flex: 1, padding: '0.6rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(0,0,0,0.3)', color: 'white', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem', transition: 'all 0.15s' }}>♚ Black</button>
+                                    <div className="label-caps" style={{ marginBottom: '6px' }}>Play As</div>
+                                    <div style={{ display: 'flex', gap: '4px' }}>
+                                      <button onClick={() => handleStartAIGame(bot, 'white')} className="ai-color-btn" style={{ flex: 1, padding: '7px', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--on-surface)', cursor: 'pointer', fontWeight: '500', fontSize: '12px', fontFamily: 'var(--font-sans)', transition: 'background 0.15s ease' }}>♔ White</button>
+                                      <button onClick={() => handleStartAIGame(bot, 'random')} className="ai-color-btn" style={{ flex: 1, padding: '7px', borderRadius: '4px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--on-surface-variant)', cursor: 'pointer', fontWeight: '500', fontSize: '12px', fontFamily: 'var(--font-sans)', transition: 'background 0.15s ease' }}>⚄ Random</button>
+                                      <button onClick={() => handleStartAIGame(bot, 'black')} className="ai-color-btn" style={{ flex: 1, padding: '7px', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--on-surface)', color: 'white', cursor: 'pointer', fontWeight: '500', fontSize: '12px', fontFamily: 'var(--font-sans)', transition: 'background 0.15s ease' }}>♚ Black</button>
                                     </div>
                                   </div>
                                 </div>
@@ -950,12 +942,16 @@ export default function Lobby() {
                         <Link
                           to="/bots"
                           style={{
-                            display: 'block', textAlign: 'center', background: 'transparent', border: '1px dashed var(--border-color)',
-                            color: 'var(--text-secondary)', padding: '0.85rem', borderRadius: '8px',
-                            cursor: 'pointer', transition: 'all 0.2s', marginTop: '0.25rem', textDecoration: 'none'
+                            display: 'block', textAlign: 'center',
+                            background: 'transparent',
+                            border: '1px dashed var(--border)',
+                            color: 'var(--on-surface-variant)',
+                            padding: '10px', borderRadius: '4px',
+                            cursor: 'pointer', transition: 'background 0.15s ease, color 0.15s ease',
+                            marginTop: '4px', textDecoration: 'none',
+                            fontSize: '13px',
                           }}
-                          onMouseOver={e => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.borderColor = 'var(--text-secondary)'; }}
-                          onMouseOut={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border-color)'; }}
+                          className="view-all-bots-link"
                         >
                           View all opponents →
                         </Link>
@@ -970,18 +966,21 @@ export default function Lobby() {
                 <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
                   {/* Sub-tabs */}
-                  <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem' }}>
+                  <div style={{ display: 'flex', gap: '4px', borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>
                     {['random', 'friend', 'search'].map(tab => (
                       <button
                         key={tab}
                         onClick={() => setPlayerSubTab(tab)}
                         style={{
-                          padding: '0.5rem 1rem',
-                          background: playerSubTab === tab ? 'rgba(255,255,255,0.1)' : 'transparent',
-                          color: playerSubTab === tab ? 'white' : 'var(--text-secondary)',
+                          padding: '5px 10px',
+                          background: playerSubTab === tab ? 'rgba(59,76,122,0.08)' : 'transparent',
+                          color: playerSubTab === tab ? 'var(--primary)' : 'var(--on-surface-variant)',
                           border: 'none', borderRadius: '4px', cursor: 'pointer',
-                          fontWeight: playerSubTab === tab ? 'bold' : 'normal',
-                          textTransform: 'capitalize', transition: 'all 0.2s'
+                          fontWeight: playerSubTab === tab ? '600' : '400',
+                          fontSize: '12px',
+                          textTransform: 'capitalize',
+                          transition: 'background 0.15s ease, color 0.15s ease',
+                          fontFamily: 'var(--font-sans)',
                         }}
                       >
                         {tab}
@@ -990,7 +989,7 @@ export default function Lobby() {
                   </div>
 
                   {statusMessage && (
-                    <div style={{ background: '#10b981', color: 'white', padding: '0.75rem', borderRadius: '4px', fontSize: '0.9rem', textAlign: 'center' }}>
+                    <div style={{ background: 'var(--stats-win)', color: 'white', padding: '8px 12px', borderRadius: '4px', fontSize: '13px', textAlign: 'center' }}>
                       {statusMessage}
                     </div>
                   )}
@@ -1001,30 +1000,31 @@ export default function Lobby() {
                     {playerSubTab === 'random' && (
                       <div className="animate-fade-in">
                         {queueStatus === 'searching' ? (
-                          <div style={{ textAlign: 'center', padding: '2rem 1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
-                            <div style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>Searching for opponent...</div>
-                            <p style={{ color: 'var(--accent-color)', marginBottom: '1.5rem', fontSize: '1.15rem', fontWeight: 'bold' }}>{selectedPreset}</p>
-                            <button onClick={handleCancelQueue} className="btn" style={{ background: 'var(--danger)', padding: '0.6rem 1.5rem' }}>
+                          <div style={{ textAlign: 'center', padding: '24px 12px', background: 'var(--bg)', borderRadius: '4px', border: '1px solid var(--border)' }}>
+                            <div style={{ fontSize: '14px', marginBottom: '8px', color: 'var(--on-surface)' }}>Searching for opponent...</div>
+                            <p style={{ color: 'var(--primary)', marginBottom: '16px', fontSize: '16px', fontWeight: '600', fontFamily: 'var(--font-mono)' }}>{selectedPreset}</p>
+                            <button onClick={handleCancelQueue} className="btn" style={{ padding: '0 20px', background: 'var(--stats-loss)' }}>
                               Cancel Search
                             </button>
                           </div>
                         ) : (
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '0.75rem' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '6px' }}>
                             {PRESETS.map((preset, i) => (
                               <button
                                 key={preset.label}
                                 onClick={() => handleJoinQueue(preset)}
                                 className="preset-btn surface-2"
                                 style={{
-                                  color: 'var(--text-primary)', display: 'flex', flexDirection: 'column',
+                                  color: 'var(--on-surface)', display: 'flex', flexDirection: 'column',
                                   alignItems: 'center', justifyContent: 'center',
-                                  padding: '1.25rem 0.75rem', cursor: 'pointer',
-                                  transition: 'all 0.2s', animation: `fadeIn 0.3s ease forwards ${i * 0.05}s`
+                                  padding: '14px 8px', cursor: 'pointer',
+                                  transition: 'background 0.15s ease, border-color 0.15s ease',
+                                  animation: `fadeIn 0.3s ease forwards ${i * 0.05}s`,
                                 }}
                               >
-                                <preset.icon size={24} style={{ marginBottom: '0.5rem', color: 'var(--text-secondary)' }} className="preset-icon" />
-                                <span style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{preset.label}</span>
-                                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                                <preset.icon size={20} style={{ marginBottom: '6px', color: 'var(--on-surface-variant)' }} className="preset-icon" />
+                                <span style={{ fontSize: '14px', fontWeight: '600', fontFamily: 'var(--font-mono)' }}>{preset.label}</span>
+                                <span style={{ fontSize: '11px', color: 'var(--on-surface-variant)', marginTop: '2px' }}>
                                   {getTimeCategory(parseInt(preset.label.split('+')[0]))}
                                 </span>
                               </button>
@@ -1036,44 +1036,43 @@ export default function Lobby() {
 
                     {/* FRIEND TAB */}
                     {playerSubTab === 'friend' && (
-                      <div className="animate-fade-in custom-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: 'calc((4 * 64px) + (3 * 0.5rem))', overflowY: 'auto', paddingRight: '0.5rem' }}>
+                      <div className="animate-fade-in custom-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: 'calc((4 * 60px) + (3 * 4px))', overflowY: 'auto', paddingRight: '4px' }}>
                         {allFriends.length === 0 ? (
-                          <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                          <div style={{ textAlign: 'center', padding: '24px 12px', color: 'var(--on-surface-variant)', fontSize: '13px' }}>
                             No friends added yet. Try the Search tab or add friends in the Friends page.
                           </div>
                         ) : (
                           allFriends.map(friend => (
                             <div key={friend.id} className="surface-2" style={{ display: 'flex', flexDirection: 'column' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', height: '64px', flexShrink: 0, boxSizing: 'border-box' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', height: '60px', flexShrink: 0, boxSizing: 'border-box' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                   <div style={{ position: 'relative' }}>
-                                    <div style={{ width: '28px', height: '28px', background: 'var(--accent-color)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.8rem', color: 'white' }}>
+                                    <div style={{ width: '28px', height: '28px', background: 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '600', fontSize: '12px', color: 'var(--on-primary)' }}>
                                       {friend.username.charAt(0).toUpperCase()}
                                     </div>
-                                    <div style={{ position: 'absolute', bottom: -2, right: -2, width: '10px', height: '10px', borderRadius: '50%', background: friend.isOnline ? '#10b981' : '#6b7280', border: '2px solid var(--bg-color)' }}></div>
+                                    <div style={{ position: 'absolute', bottom: -2, right: -2, width: '9px', height: '9px', borderRadius: '50%', background: friend.isOnline ? 'var(--stats-win)' : 'var(--stats-draw)', border: '2px solid var(--bg)' }}></div>
                                   </div>
                                   <div>
-                                    <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{friend.username}</div>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{friend.rating}</div>
+                                    <div style={{ fontWeight: '500', fontSize: '13px', color: 'var(--on-surface)' }}>{friend.username}</div>
+                                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--on-surface-variant)', fontVariantNumeric: 'tabular-nums' }}>{friend.rating}</div>
                                   </div>
                                 </div>
                                 <button
                                   onClick={() => setSelectedFriend(selectedFriend === friend.id ? null : friend.id)}
-                                  style={{ background: selectedFriend === friend.id ? 'rgba(255,255,255,0.1)' : 'var(--accent-color)', color: 'white', border: 'none', padding: '0.3rem 0.6rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold' }}
+                                  style={{ background: selectedFriend === friend.id ? 'var(--bg)' : 'var(--primary)', color: selectedFriend === friend.id ? 'var(--on-surface-variant)' : 'white', border: selectedFriend === friend.id ? '1px solid var(--border)' : 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: '600', fontFamily: 'var(--font-sans)', transition: 'background 0.15s ease' }}
                                 >
                                   {selectedFriend === friend.id ? 'Cancel' : 'Challenge'}
                                 </button>
                               </div>
 
                               {selectedFriend === friend.id && (
-                                <div style={{ padding: '0.5rem 0.75rem', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                <div style={{ padding: '6px 10px', background: 'var(--bg)', borderTop: '1px solid var(--border)', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                                   {PRESETS.map(preset => (
                                     <button
                                       key={preset.label}
                                       onClick={() => handleChallengeFriend(friend, preset)}
-                                      style={{ padding: '0.2rem 0.5rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: 'white', cursor: 'pointer', fontSize: '0.75rem' }}
-                                      onMouseOver={(e) => { e.currentTarget.style.background = 'var(--accent-color)'; e.currentTarget.style.borderColor = 'var(--accent-color)'; }}
-                                      onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
+                                      className="preset-challenge-btn"
+                                      style={{ padding: '3px 8px', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--on-surface)', cursor: 'pointer', fontSize: '12px', fontFamily: 'var(--font-sans)', transition: 'background 0.15s ease' }}
                                     >
                                       {preset.label}
                                     </button>
@@ -1088,52 +1087,51 @@ export default function Lobby() {
 
                     {/* SEARCH TAB */}
                     {playerSubTab === 'search' && (
-                      <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <form onSubmit={handleSearchUser} style={{ display: 'flex', gap: '0.5rem' }}>
+                      <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <form onSubmit={handleSearchUser} style={{ display: 'flex', gap: '6px' }}>
                           <input
                             type="text"
                             placeholder="Search username to challenge..."
                             value={searchUsername}
                             onChange={e => setSearchUsername(e.target.value)}
-                            style={{ flex: 1, padding: '0.75rem', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', color: 'white', borderRadius: '4px', outline: 'none' }}
+                            style={{ flex: 1, padding: '8px 10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--on-surface)', borderRadius: '4px', outline: 'none', fontSize: '13px' }}
                           />
-                          <button type="submit" className="btn" style={{ padding: '0 1.5rem' }}>Find</button>
+                          <button type="submit" className="btn" style={{ padding: '0 14px', fontSize: '13px' }}>Find</button>
                         </form>
 
-                        {searchError && <div style={{ color: 'var(--danger)', fontSize: '0.85rem' }}>{searchError}</div>}
+                        {searchError && <div style={{ color: 'var(--stats-loss)', fontSize: '13px' }}>{searchError}</div>}
 
                         {searchResult && (
                           <div className="surface-2" style={{ display: 'flex', flexDirection: 'column' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <div style={{ position: 'relative' }}>
-                                  <div style={{ width: '32px', height: '32px', background: 'var(--accent-color)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.9rem', color: 'white' }}>
+                                  <div style={{ width: '30px', height: '30px', background: 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '600', fontSize: '13px', color: 'var(--on-primary)' }}>
                                     {searchResult.username.charAt(0).toUpperCase()}
                                   </div>
-                                  <div style={{ position: 'absolute', bottom: -2, right: -2, width: '10px', height: '10px', borderRadius: '50%', background: searchResult.showOnlineStatus ? '#10b981' : '#6b7280', border: '2px solid var(--bg-color)' }}></div>
+                                  <div style={{ position: 'absolute', bottom: -2, right: -2, width: '9px', height: '9px', borderRadius: '50%', background: searchResult.showOnlineStatus ? 'var(--stats-win)' : 'var(--stats-draw)', border: '2px solid var(--bg)' }}></div>
                                 </div>
                                 <div>
-                                  <div style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>{searchResult.username}</div>
-                                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Rating: {searchResult.rating}</div>
+                                  <div style={{ fontWeight: '500', fontSize: '13px', color: 'var(--on-surface)' }}>{searchResult.username}</div>
+                                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--on-surface-variant)', fontVariantNumeric: 'tabular-nums' }}>Rating: {searchResult.rating}</div>
                                 </div>
                               </div>
                               <button
                                 onClick={() => setSelectedFriend(selectedFriend === searchResult.id ? null : searchResult.id)}
-                                style={{ background: selectedFriend === searchResult.id ? 'rgba(255,255,255,0.1)' : 'var(--accent-color)', color: 'white', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
+                                style={{ background: selectedFriend === searchResult.id ? 'var(--bg)' : 'var(--primary)', color: selectedFriend === searchResult.id ? 'var(--on-surface-variant)' : 'white', border: selectedFriend === searchResult.id ? '1px solid var(--border)' : 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: '600', fontFamily: 'var(--font-sans)', transition: 'background 0.15s ease' }}
                               >
                                 {selectedFriend === searchResult.id ? 'Cancel' : 'Challenge'}
                               </button>
                             </div>
 
                             {selectedFriend === searchResult.id && (
-                              <div style={{ padding: '0.5rem 0.75rem', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                              <div style={{ padding: '6px 10px', background: 'var(--bg)', borderTop: '1px solid var(--border)', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                                 {PRESETS.map(preset => (
                                   <button
                                     key={preset.label}
                                     onClick={() => handleChallengeFriend(searchResult, preset)}
-                                    style={{ padding: '0.25rem 0.6rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: 'white', cursor: 'pointer', fontSize: '0.8rem' }}
-                                    onMouseOver={(e) => { e.currentTarget.style.background = 'var(--accent-color)'; e.currentTarget.style.borderColor = 'var(--accent-color)'; }}
-                                    onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
+                                    className="preset-challenge-btn"
+                                    style={{ padding: '3px 8px', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--on-surface)', cursor: 'pointer', fontSize: '12px', fontFamily: 'var(--font-sans)', transition: 'background 0.15s ease' }}
                                   >
                                     {preset.label}
                                   </button>
@@ -1201,38 +1199,38 @@ export default function Lobby() {
                     <div style={{ overflowX: 'auto', border: '1px solid var(--border-color)', borderRadius: '6px' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                         <thead>
-                          <tr style={{ borderBottom: '1px solid var(--border-color)', background: 'rgba(0,0,0,0.1)' }}>
-                            <th style={{ padding: '0.5rem 0.75rem', fontWeight: 'normal', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Player</th>
-                            <th style={{ padding: '0.5rem 0.75rem', fontWeight: 'normal', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Rating</th>
-                            <th style={{ padding: '0.5rem 0.75rem', fontWeight: 'normal', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Time</th>
-                            <th style={{ padding: '0.5rem 0.75rem', fontWeight: 'normal', fontSize: '0.75rem', color: 'var(--text-secondary)' }}></th>
+                          <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
+                            <th style={{ padding: '6px 10px', fontWeight: '500', fontSize: '11px', color: 'var(--on-surface-variant)', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left' }}>Player</th>
+                            <th style={{ padding: '6px 10px', fontWeight: '500', fontSize: '11px', color: 'var(--on-surface-variant)', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left' }}>Rating</th>
+                            <th style={{ padding: '6px 10px', fontWeight: '500', fontSize: '11px', color: 'var(--on-surface-variant)', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left' }}>Time</th>
+                            <th style={{ padding: '6px 10px' }}></th>
                           </tr>
                         </thead>
                         <tbody>
                           {openSeeks.length === 0 ? (
                             <tr>
-                              <td colSpan="4" style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                              <td colSpan="4" style={{ padding: '16px', textAlign: 'center', color: 'var(--on-surface-variant)', fontSize: '13px' }}>
                                 No open challenges right now. Join the queue!
                               </td>
                             </tr>
                           ) : (
                             openSeeks.map((seek, i) => (
-                              <tr key={i} className="seek-row surface-2" style={{ transition: 'background 0.2s' }}>
-                                <td style={{ padding: '0.75rem 1rem', fontWeight: 'bold', fontSize: '0.85rem' }}>{seek.username}</td>
-                                <td style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{seek.rating}</td>
-                                <td style={{ padding: '0.75rem 1rem' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                    <span style={{ fontSize: '0.85rem' }}>{seek.type === 'queue' ? seek.preset : `${seek.timeControlSec / 60}+${seek.incrementSec}`}</span>
-                                    <span style={{ fontSize: '0.65rem', padding: '0.15rem 0.3rem', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', color: 'var(--text-secondary)' }}>
+                              <tr key={i} className="seek-row" style={{ transition: 'background 0.15s ease' }}>
+                                <td style={{ padding: '8px 10px', fontWeight: '500', fontSize: '13px', color: 'var(--on-surface)' }}>{seek.username}</td>
+                                <td style={{ padding: '8px 10px', color: 'var(--on-surface-variant)', fontSize: '13px', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>{seek.rating}</td>
+                                <td style={{ padding: '8px 10px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ fontSize: '13px', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>{seek.type === 'queue' ? seek.preset : `${seek.timeControlSec / 60}+${seek.incrementSec}`}</span>
+                                    <span style={{ fontSize: '10px', padding: '1px 4px', background: 'rgba(27,27,31,0.06)', borderRadius: '2px', color: 'var(--on-surface-variant)' }}>
                                       {getTimeCategory(seek.type === 'queue' ? parseInt(seek.preset.split('+')[0]) : seek.timeControlSec / 60)}
                                     </span>
                                   </div>
                                 </td>
-                                <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
+                                <td style={{ padding: '8px 10px', textAlign: 'right' }}>
                                   <button
                                     onClick={() => handleAcceptSeek(seek)}
                                     className="btn"
-                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', height: 'auto' }}
+                                    style={{ padding: '0 10px', fontSize: '12px', height: '28px' }}
                                   >
                                     Play
                                   </button>
@@ -1250,16 +1248,16 @@ export default function Lobby() {
           </div>
 
           {/* ── Recent Activity card ── */}
-          <div className="glass-panel animate-fade-in" style={{ padding: '1.25rem' }}>
+          <div className="glass-panel animate-fade-in" style={{ padding: '14px' }}>
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Clock size={16} color="var(--accent-color)" />
-                <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '700' }}>Recent Activity</h3>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Clock size={14} color="var(--primary)" />
+                <h3 className="label-caps" style={{ margin: 0, color: 'var(--on-surface-variant)' }}>Recent Activity</h3>
               </div>
               <Link
                 to="/history"
-                style={{ fontSize: '0.75rem', color: 'var(--accent-color)', textDecoration: 'none', fontWeight: '600' }}
+                style={{ fontSize: '12px', color: 'var(--primary)', textDecoration: 'none', fontWeight: '600' }}
               >
                 View all
               </Link>
@@ -1267,7 +1265,7 @@ export default function Lobby() {
 
             {/* Game rows — capped at 3 on this page */}
             {recentGames.length === 0 ? (
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', textAlign: 'center', padding: '1.5rem 0' }}>
+              <div style={{ color: 'var(--on-surface-variant)', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>
                 No games yet — play one!
               </div>
             ) : (
@@ -1293,16 +1291,16 @@ export default function Lobby() {
 
                   if (won) {
                     phrase = `You won against ${oppName}`;
-                    outcomeColor = '#10b981';
-                    dotColor = '#10b981';
+                    outcomeColor = 'var(--stats-win)';
+                    dotColor = 'var(--stats-win)';
                   } else if (lost) {
                     phrase = `You were beat by ${oppName}`;
-                    outcomeColor = 'var(--danger)';
-                    dotColor = '#ef4444';
+                    outcomeColor = 'var(--stats-loss)';
+                    dotColor = 'var(--stats-loss)';
                   } else {
                     phrase = `Draw with ${oppName}`;
-                    outcomeColor = 'var(--text-secondary)';
-                    dotColor = '#9ca3af';
+                    outcomeColor = 'var(--stats-draw)';
+                    dotColor = 'var(--stats-draw)';
                   }
 
                   // Rating delta
@@ -1313,9 +1311,9 @@ export default function Lobby() {
                         : delta < 0 ? `${delta}`
                           : '0';
                   const deltaColor =
-                    delta > 0 ? '#10b981'
-                      : delta < 0 ? 'var(--danger)'
-                        : 'var(--text-secondary)';
+                    delta > 0 ? 'var(--stats-win)'
+                      : delta < 0 ? 'var(--stats-loss)'
+                        : 'var(--on-surface-variant)';
 
                   // Relative timestamp
                   const relTime = (() => {
@@ -1341,40 +1339,40 @@ export default function Lobby() {
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.65rem 0.5rem',
+                        gap: '10px',
+                        padding: '10px 6px',
                         borderBottom: idx < Math.min(recentGames.length, 3) - 1
-                          ? '1px solid rgba(255,255,255,0.04)'
+                          ? '1px solid var(--border)'
                           : 'none',
-                        transition: 'background 0.15s',
-                        borderRadius: '6px',
+                        transition: 'background 0.15s ease',
+                        borderRadius: '4px',
                         cursor: 'default',
                       }}
                     >
                       {/* Outcome dot + opponent avatar */}
                       <div style={{ position: 'relative', flexShrink: 0 }}>
                         <div style={{
-                          width: '34px', height: '34px', borderRadius: '50%',
-                          background: 'var(--surface-2)',
+                          width: '32px', height: '32px', borderRadius: '50%',
+                          background: 'var(--bg)',
                           border: `2px solid ${dotColor}`,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontWeight: '700', fontSize: '0.85rem', color: 'var(--text-primary)',
+                          fontWeight: '600', fontSize: '13px', color: 'var(--on-surface)',
                         }}>
                           {oppInitial}
                         </div>
                         {/* Small outcome pip */}
                         <div style={{
                           position: 'absolute', bottom: -1, right: -1,
-                          width: '10px', height: '10px', borderRadius: '50%',
+                          width: '9px', height: '9px', borderRadius: '50%',
                           background: dotColor,
-                          border: '2px solid var(--surface-1)',
+                          border: '2px solid var(--surface)',
                         }} />
                       </div>
 
                       {/* Text */}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{
-                          fontSize: '0.82rem',
+                          fontSize: '13px',
                           fontWeight: '600',
                           color: outcomeColor,
                           whiteSpace: 'nowrap',
@@ -1383,7 +1381,7 @@ export default function Lobby() {
                         }}>
                           {phrase}
                         </div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--on-surface-variant)', marginTop: '2px' }}>
                           {relTime}
                         </div>
                       </div>
@@ -1391,12 +1389,13 @@ export default function Lobby() {
                       {/* Rating delta */}
                       {deltaText != null && (
                         <div style={{
-                          fontSize: '0.85rem',
-                          fontWeight: '800',
+                          fontSize: '13px',
+                          fontWeight: '700',
                           color: deltaColor,
                           flexShrink: 0,
-                          minWidth: '36px',
+                          minWidth: '32px',
                           textAlign: 'right',
+                          fontFamily: 'var(--font-mono)',
                           fontVariantNumeric: 'tabular-nums',
                         }}>
                           {deltaText}
@@ -1414,56 +1413,85 @@ export default function Lobby() {
       </div>{/* ── End lobby-grid ── */}
 
       <style>{`
+        /* ── Lobby hover states: Onyx Inversion ── */
         .lobby-action-card:hover {
-          border-color: rgba(255,255,255,0.2) !important;
-          transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+          background: var(--primary) !important;
+          border-color: var(--primary) !important;
         }
-        .activity-row:hover {
-          background: rgba(255,255,255,0.03) !important;
+        .lobby-action-card:hover .action-title,
+        .lobby-action-card:hover .action-subtitle {
+          color: var(--on-primary) !important;
         }
-        .view-stats-link:hover {
-          background: rgba(59,130,246,0.1) !important;
-          border-color: var(--accent-color) !important;
-        }
-        .preset-btn:hover {
-          background: rgba(255,255,255,0.08) !important;
-          transform: translateY(-2px);
-          border-color: var(--accent-color) !important;
-        }
-        .preset-btn:hover .preset-icon {
-          color: var(--accent-color) !important;
-        }
-        .ai-bot-btn:hover {
-          background: rgba(255,255,255,0.08) !important;
-          transform: translateY(-2px);
-          border-color: var(--accent-color) !important;
-        }
-        .ai-color-btn:hover {
-          background: var(--accent-color) !important;
-          color: white !important;
-          border-color: var(--accent-color) !important;
-          transform: translateY(-1px);
-        }
-        .seek-row:hover {
-          background: rgba(255,255,255,0.03) !important;
+        .lobby-action-card:hover .action-icon {
+          background: var(--on-primary) !important;
+          color: var(--primary) !important;
         }
 
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
+        .activity-row:hover {
+          background: var(--primary) !important;
         }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.05);
-          border-radius: 4px;
+        .activity-row:hover * {
+          color: var(--on-primary) !important;
+          border-color: var(--on-primary) !important;
         }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.2);
-          border-radius: 4px;
+
+        .view-stats-link:hover {
+          background: var(--primary) !important;
+          color: var(--on-primary) !important;
         }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.3);
+        .view-stats-link:hover * {
+          color: var(--on-primary) !important;
         }
-        
+
+        .preset-btn:hover {
+          background: var(--primary) !important;
+          color: var(--on-primary) !important;
+          border-color: var(--primary) !important;
+        }
+        .preset-btn:hover .preset-icon {
+          color: var(--on-primary) !important;
+        }
+        .preset-btn:hover div {
+          color: var(--on-primary) !important;
+        }
+
+        .ai-bot-btn:hover {
+          background: var(--primary) !important;
+          border-color: var(--primary) !important;
+        }
+        .ai-bot-btn:hover * {
+          color: var(--on-primary) !important;
+        }
+        .ai-bot-btn:hover .bot-avatar-inner {
+          color: white !important;
+        }
+
+        .ai-color-btn:hover {
+          background: var(--primary) !important;
+          color: var(--on-primary) !important;
+          border-color: var(--primary) !important;
+        }
+
+        .seek-row:hover {
+          background: var(--primary) !important;
+        }
+        .seek-row:hover * {
+          color: var(--on-primary) !important;
+        }
+
+        .preset-challenge-btn:hover {
+          background: var(--primary) !important;
+          border-color: var(--primary) !important;
+        }
+        .preset-challenge-btn:hover * {
+          color: var(--on-primary) !important;
+        }
+
+        .view-all-bots-link:hover {
+          background: var(--primary) !important;
+          color: var(--on-primary) !important;
+        }
+
         @media (max-width: 1100px) {
           .lobby-grid {
             grid-template-columns: 1fr 1fr !important;

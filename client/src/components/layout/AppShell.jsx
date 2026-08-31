@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../hooks/useSocket';
 import { useOutsideClick } from '../../hooks/useOutsideClick';
 import { useSettings } from '../../context/SettingsContext';
-import { Play, Trophy, History, User as UserIcon, Settings, LogOut, Menu, X, ChevronDown, Eye, Users, Bell, BookOpen, Moon, Monitor, ShoppingBag } from 'lucide-react';
+import { Play, Trophy, History, User as UserIcon, Settings, LogOut, Menu, X, ChevronDown, Eye, Users, Bell, BookOpen, Monitor, ShoppingBag, Moon } from 'lucide-react';
 import Logo from '../Logo';
 
 export default function AppShell({ children }) {
@@ -13,13 +13,13 @@ export default function AppShell({ children }) {
   const { settings, updateSetting } = useSettings();
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   const [onlineCount, setOnlineCount] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [coinsBalance, setCoinsBalance] = useState(null);
-  
+
   const notificationsRef = useOutsideClick(() => setNotificationsOpen(false));
   const userDropdownRef = useOutsideClick(() => setDropdownOpen(false));
   const [incomingChallenge, setIncomingChallenge] = useState(null);
@@ -58,7 +58,7 @@ export default function AppShell({ children }) {
 
   useEffect(() => {
     if (!socket || !user) return;
-    
+
     // Note: user registration into the presence store now happens server-side
     // at socket handshake time (via the JWT auth middleware), so no manual
     // register_user emit is needed here.
@@ -141,7 +141,7 @@ export default function AppShell({ children }) {
 
   const handleNotificationClick = async (notification) => {
     setNotificationsOpen(false);
-    
+
     // Mark as read
     if (!notification.read) {
       try {
@@ -197,99 +197,122 @@ export default function AppShell({ children }) {
   ];
 
   return (
-    <div className="app-shell" style={{ display: 'flex', minHeight: '100vh', background: 'transparent', color: 'var(--text-primary)' }}>
-      {/* Sidebar Navigation */}
-      <aside 
-        style={{ 
-          width: '250px', 
-          background: 'rgba(0,0,0,0.3)', 
-          borderRight: '1px solid var(--border-color)',
+    <div className="app-shell" style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)', color: 'var(--on-surface)' }}>
+
+      {/* ── Sidebar ───────────────────────────────────────────────────────── */}
+      <aside
+        style={{
+          width: '232px',
+          background: 'var(--surface)',
+          borderRight: '1px solid var(--border)',
           display: 'flex',
           flexDirection: 'column',
-          transition: 'transform 0.3s ease',
           position: 'fixed',
           top: 0,
           bottom: 0,
           left: 0,
           zIndex: 40,
-          transform: sidebarOpen ? 'translateX(0)' : 'translateX(0)', // Adjust via CSS for mobile
+          transition: 'transform 0.25s ease',
         }}
         className={`sidebar ${sidebarOpen ? 'open' : ''}`}
       >
-        <div style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', color: 'inherit' }}>
+        {/* Logo area */}
+        <div style={{
+          padding: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          borderBottom: '1px solid var(--border)',
+          minHeight: '60px',
+        }}>
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'inherit', flex: 1 }}>
             <Logo size="sm" />
           </Link>
-          <button className="mobile-close" onClick={() => setSidebarOpen(false)} style={{ marginLeft: 'auto', display: 'none', background: 'none', border: 'none', color: 'white' }}>
-            <X size={24} />
+          <button
+            className="mobile-close"
+            onClick={() => setSidebarOpen(false)}
+            style={{ display: 'none', background: 'none', border: 'none', color: 'var(--on-surface-variant)', cursor: 'pointer', padding: '4px' }}
+          >
+            <X size={20} />
           </button>
         </div>
 
-        <nav style={{ padding: '1.5rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+        {/* Nav links */}
+        <nav style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '2px', flex: 1, overflowY: 'auto' }}>
           {navItems.map(item => {
             const isActive = location.pathname === item.path || (item.path === '/lobby' && location.pathname.startsWith('/game'));
             return (
               <Link
                 key={item.label}
                 to={item.path}
+                className={`nav-link ${isActive ? 'active' : ''}`}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '1rem',
-                  padding: '0.75rem 1rem',
-                  borderRadius: '8px',
-                  color: isActive ? 'white' : 'var(--text-secondary)',
-                  background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
+                  gap: '10px',
+                  padding: '9px 12px',
+                  borderRadius: '4px',
+                  color: isActive ? 'var(--on-primary)' : 'var(--on-surface-variant)',
+                  background: isActive ? 'var(--primary)' : 'transparent',
                   textDecoration: 'none',
-                  transition: 'all 0.2s'
+                  fontSize: '14px',
+                  fontWeight: isActive ? '600' : '400',
+                  transition: 'background 0.15s ease, color 0.15s ease, border-color 0.15s ease',
+                  border: isActive ? '1px solid transparent' : '1px solid transparent',
                 }}
-                className="nav-link"
               >
-                <item.icon size={20} color={isActive ? 'var(--accent-color)' : 'currentColor'} />
-                <span style={{ fontWeight: isActive ? '600' : 'normal' }}>{item.label}</span>
+                <item.icon
+                  size={17}
+                  style={{ flexShrink: 0 }}
+                />
+                <span>{item.label}</span>
               </Link>
-            )
+            );
           })}
         </nav>
 
-        {/* Theme switcher footer — Light palette not built yet; both options stay dark */}
+        {/* Theme switcher footer */}
         <div style={{
-          padding: '1rem',
-          borderTop: '1px solid var(--border-color)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.5rem'
+          padding: '12px',
+          borderTop: '1px solid var(--border)',
         }}>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.25rem' }}>Theme</div>
-          <div style={{ display: 'flex', gap: '0.4rem' }}>
+          {/* label-caps style inline since we can't use className on inner div easily */}
+          <div style={{
+            fontSize: '11px', fontWeight: '600', letterSpacing: '0.05em', textTransform: 'uppercase',
+            color: 'var(--on-surface-variant)', marginBottom: '8px',
+          }}>Theme</div>
+          <div style={{ display: 'flex', gap: '4px' }}>
             {[
-              { value: 'dark',   Icon: Moon,    label: 'Dark'   },
-              { value: 'system', Icon: Monitor, label: 'System' },
+              { value: 'dark', Icon: Moon, label: 'Dark' },
+              /*
+               * TODO: Re-enable "System" and "Light" options once a proper light-variant of
+               * Onyx tokens is defined. For now, they are hidden to prevent a dead control.
+               * { value: 'system', Icon: Monitor, label: 'System' },
+               */
             ].map(({ value, Icon, label }) => {
-              const active = settings.theme === value;
+              const active = settings.theme === value || (value === 'system' && (settings.theme === 'dark' || !settings.theme));
               return (
                 <button
                   key={value}
                   title={label}
                   onClick={() => updateSetting('theme', value)}
+                  className="theme-btn"
                   style={{
                     flex: 1,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '0.3rem',
-                    padding: '0.45rem 0.3rem',
-                    borderRadius: '6px',
-                    border: active ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
-                    background: active ? 'rgba(59,130,246,0.15)' : 'transparent',
-                    color: active ? 'var(--accent-color)' : 'var(--text-secondary)',
+                    gap: '5px',
+                    padding: '6px 8px',
+                    borderRadius: '4px',
+                    border: active ? '1px solid var(--primary)' : '1px solid var(--border)',
+                    background: active ? 'var(--primary)' : 'transparent',
+                    color: active ? 'var(--on-primary)' : 'var(--on-surface-variant)',
                     cursor: 'pointer',
-                    fontSize: '0.7rem',
-                    fontWeight: active ? '700' : '400',
-                    fontFamily: 'inherit',
-                    transition: 'all 0.2s'
+                    fontSize: '12px',
+                    fontWeight: active ? '600' : '400',
+                    fontFamily: 'var(--font-sans)',
+                    transition: 'background 0.15s ease, border-color 0.15s ease, color 0.15s ease',
                   }}
-                  className="theme-btn"
                 >
                   <Icon size={13} />
                   {label}
@@ -300,49 +323,65 @@ export default function AppShell({ children }) {
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <div style={{ flex: 1, marginLeft: '250px', display: 'flex', flexDirection: 'column', minHeight: '100vh', width: 'calc(100% - 250px)' }} className="main-content-wrapper">
-        
+      {/* ── Main Content ──────────────────────────────────────────────────── */}
+      <div
+        style={{ flex: 1, marginLeft: '232px', display: 'flex', flexDirection: 'column', minHeight: '100vh', width: 'calc(100% - 232px)' }}
+        className="main-content-wrapper"
+      >
+
         {/* Top Bar */}
-        <header style={{ 
-          height: '70px', 
-          borderBottom: '1px solid var(--border-color)', 
-          display: 'flex', 
-          alignItems: 'center', 
+        <header style={{
+          height: '60px',
+          borderBottom: '1px solid var(--border)',
+          display: 'flex',
+          alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '0 2rem',
-          background: 'rgba(0,0,0,0.2)',
+          padding: '0 16px',
+          background: 'var(--surface)',
           position: 'sticky',
           top: 0,
           zIndex: 30,
-          backdropFilter: 'blur(10px)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <button className="mobile-menu-btn" onClick={() => setSidebarOpen(true)} style={{ display: 'none', background: 'none', border: 'none', color: 'white' }}>
-              <Menu size={24} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
+              className="mobile-menu-btn"
+              onClick={() => setSidebarOpen(true)}
+              style={{ display: 'none', background: 'none', border: 'none', color: 'var(--on-surface)', cursor: 'pointer', padding: '4px' }}
+            >
+              <Menu size={20} />
             </button>
           </div>
 
           {user && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
 
               {/* Coin Balance Chip */}
               {coinsBalance !== null && (
                 <div
+                  id="coin-chip"
                   onClick={() => navigate('/shop')}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '0.4rem',
-                    background: 'linear-gradient(135deg, rgba(234,179,8,0.18), rgba(251,191,36,0.10))',
-                    border: '1px solid rgba(234,179,8,0.35)',
-                    borderRadius: '20px', padding: '0.35rem 0.85rem',
-                    cursor: 'pointer', transition: 'all 0.2s',
-                    userSelect: 'none',
-                  }}
                   className="coin-chip"
                   title="Chess Coins — click to open Shop"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '5px',
+                    background: 'rgba(184,134,11,0.08)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '4px',
+                    padding: '5px 10px',
+                    cursor: 'pointer',
+                    transition: 'background 0.15s ease',
+                    userSelect: 'none',
+                  }}
                 >
-                  <span style={{ fontSize: '1rem', lineHeight: 1 }}>🪙</span>
-                  <span style={{ fontWeight: '700', fontSize: '0.88rem', color: '#fbbf24', letterSpacing: '0.3px' }}>
+                  <span style={{ fontSize: '14px', lineHeight: 1 }}>🪙</span>
+                  <span style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontWeight: '500',
+                    fontSize: '13px',
+                    color: 'var(--stats-gold)',
+                    letterSpacing: '0.02em',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}>
                     {coinsBalance.toLocaleString()}
                   </span>
                 </div>
@@ -350,67 +389,112 @@ export default function AppShell({ children }) {
 
               {/* Notification Bell */}
               <div style={{ position: 'relative' }} ref={notificationsRef}>
-                <button 
+                <button
+                  id="notifications-bell"
                   onClick={() => { setNotificationsOpen(!notificationsOpen); setDropdownOpen(false); }}
-                  style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', position: 'relative' }}
                   className="bell-btn"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--on-surface-variant)',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    padding: '6px',
+                    borderRadius: '4px',
+                    transition: 'color 0.15s ease, background 0.15s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
                 >
-                  <Bell size={20} />
+                  <Bell size={18} />
                   {unreadCount > 0 && (
-                    <span style={{ 
-                      position: 'absolute', top: '-5px', right: '-5px', background: '#ef4444', color: 'white', 
-                      fontSize: '0.65rem', fontWeight: 'bold', width: '16px', height: '16px', borderRadius: '50%',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    <span style={{
+                      position: 'absolute', top: '2px', right: '2px',
+                      background: 'var(--stats-loss)', color: 'white',
+                      fontSize: '10px', fontWeight: '700',
+                      width: '15px', height: '15px', borderRadius: '50%',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontFamily: 'var(--font-mono)',
                     }}>
                       {unreadCount}
                     </span>
                   )}
                 </button>
 
+                {/* Notifications Dropdown */}
                 {notificationsOpen && (
-                  <div style={{ 
-                    position: 'absolute', top: '100%', right: '-50px', marginTop: '1rem', background: 'var(--surface-1)', 
-                    border: '1px solid var(--border-color)', borderRadius: '8px', minWidth: '280px', maxWidth: '320px',
-                    boxShadow: '0 10px 25px rgba(0,0,0,0.5)', animation: 'fadeIn 0.2s ease', zIndex: 100,
-                    maxHeight: '400px', overflowY: 'auto'
+                  <div style={{
+                    position: 'absolute', top: 'calc(100% + 8px)', right: '-8px',
+                    background: 'var(--surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '4px',
+                    minWidth: '280px', maxWidth: '320px',
+                    boxShadow: 'var(--shadow-dropdown)',
+                    animation: 'fadeIn 0.15s ease',
+                    zIndex: 100,
+                    maxHeight: '400px', overflowY: 'auto',
                   }}>
-                    <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 'bold' }}>Notifications</span>
+                    <div style={{
+                      padding: '10px 14px',
+                      borderBottom: '1px solid var(--border)',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    }}>
+                      <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--on-surface)' }}>Notifications</span>
                       {unreadCount > 0 && (
-                        <button onClick={async () => {
-                          try {
-                            await fetch('http://localhost:3000/notifications/mark-all-read', { 
-                              method: 'PATCH',
-                              headers: { 'Authorization': `Bearer ${token}` }
-                            });
-                            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-                          } catch (e) {}
-                        }} style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', fontSize: '0.8rem' }}>
+                        <button
+                          onClick={async () => {
+                            try {
+                              await fetch('http://localhost:3000/notifications/mark-all-read', {
+                                method: 'PATCH',
+                                headers: { 'Authorization': `Bearer ${token}` }
+                              });
+                              setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                            } catch (e) {}
+                          }}
+                          style={{
+                            background: 'none', border: 'none',
+                            color: 'var(--primary)', cursor: 'pointer',
+                            fontSize: '12px', fontWeight: '500',
+                            fontFamily: 'var(--font-sans)',
+                            transition: 'color 0.15s ease',
+                          }}
+                        >
                           Mark all read
                         </button>
                       )}
                     </div>
                     {notifications.length === 0 ? (
-                      <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                      <div style={{
+                        padding: '24px 14px', textAlign: 'center',
+                        color: 'var(--on-surface-variant)', fontSize: '13px',
+                      }}>
                         No notifications
                       </div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
                         {notifications.map(n => (
-                          <div 
-                            key={n.id} 
+                          <div
+                            key={n.id}
                             onClick={() => handleNotificationClick(n)}
                             className="notification-item"
-                            style={{ 
-                              padding: '0.75rem 1rem', cursor: 'pointer', borderBottom: '1px solid var(--border-color)',
-                              background: n.read ? 'transparent' : 'rgba(255,255,255,0.05)',
-                              display: 'flex', flexDirection: 'column', gap: '0.25rem'
+                            style={{
+                              padding: '10px 14px',
+                              cursor: 'pointer',
+                              borderBottom: '1px solid var(--border)',
+                              background: n.read ? 'transparent' : 'rgba(59,76,122,0.05)',
+                              display: 'flex', flexDirection: 'column', gap: '3px',
+                              transition: 'background 0.15s ease',
                             }}
                           >
-                            <span style={{ fontSize: '0.9rem', fontWeight: n.read ? 'normal' : 'bold', color: n.read ? 'var(--text-secondary)' : 'white' }}>
+                            <span style={{
+                              fontSize: '13px',
+                              fontWeight: n.read ? '400' : '600',
+                              color: n.read ? 'var(--on-surface-variant)' : 'var(--on-surface)',
+                            }}>
                               {n.message}
                             </span>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                            <span style={{ fontSize: '11px', color: 'var(--on-surface-variant)' }}>
                               {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
@@ -421,86 +505,111 @@ export default function AppShell({ children }) {
                 )}
               </div>
 
+              {/* User chip + dropdown */}
               <div style={{ position: 'relative' }} ref={userDropdownRef}>
-                <div 
-                  style={{ 
-                    display: 'flex', 
-                    alignItems: 'stretch', 
-                    background: 'rgba(255,255,255,0.05)', 
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '24px',
-                    overflow: 'hidden'
-                  }}
-                >
-                  <Link 
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'stretch',
+                  background: 'rgba(27,27,31,0.04)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '4px',
+                  overflow: 'hidden',
+                }}>
+                  <Link
                     to="/profile"
-                    style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '0.75rem', 
-                      padding: '0.5rem 0.5rem 0.5rem 1rem',
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '6px 8px 6px 10px',
                       textDecoration: 'none',
-                      color: 'white',
-                      transition: 'background 0.2s'
+                      color: 'var(--on-surface)',
+                      transition: 'background 0.15s ease',
                     }}
-                    className="user-dropdown-btn"
+                    className="user-profile-link"
                   >
-                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--accent-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                    <div style={{
+                      width: '26px', height: '26px', borderRadius: '50%',
+                      background: 'var(--primary)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontWeight: '600', fontSize: '13px', color: 'var(--on-primary)',
+                      flexShrink: 0,
+                    }}>
                       {user.username.charAt(0).toUpperCase()}
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                      <span style={{ fontSize: '0.9rem', fontWeight: 'bold', lineHeight: 1 }}>{user.username}</span>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{user.rating || 1200}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '1px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--on-surface)', lineHeight: 1 }}>
+                        {user.username}
+                      </span>
+                      <span style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '11px',
+                        color: 'var(--on-surface-variant)',
+                        fontVariantNumeric: 'tabular-nums',
+                        lineHeight: 1,
+                      }}>
+                        {user.rating || 1200} ELO
+                      </span>
                     </div>
                   </Link>
 
-                  <button 
+                  <button
                     onClick={() => { setDropdownOpen(!dropdownOpen); setNotificationsOpen(false); }}
-                    style={{ 
+                    className="user-chevron-btn"
+                    style={{
                       background: 'transparent',
                       border: 'none',
-                      borderLeft: '1px solid rgba(255,255,255,0.05)',
-                      padding: '0.5rem 0.75rem',
+                      borderLeft: '1px solid var(--border)',
+                      padding: '6px 8px',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      transition: 'background 0.2s'
+                      transition: 'background 0.15s ease',
+                      color: 'var(--on-surface-variant)',
                     }}
-                    className="user-dropdown-btn"
                   >
-                    <ChevronDown size={16} style={{ color: 'var(--text-secondary)' }} />
+                    <ChevronDown size={14} />
                   </button>
                 </div>
 
+                {/* User dropdown menu */}
                 {dropdownOpen && (
-                  <div style={{ 
-                    position: 'absolute', 
-                    top: '100%', 
-                    right: 0, 
-                    marginTop: '0.5rem', 
-                    background: 'var(--surface-1)', 
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '8px',
-                    padding: '0.5rem',
-                    minWidth: '200px',
-                    boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
-                    animation: 'fadeIn 0.2s ease'
+                  <div style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 8px)',
+                    right: 0,
+                    background: 'var(--surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '4px',
+                    padding: '4px',
+                    minWidth: '180px',
+                    boxShadow: 'var(--shadow-dropdown)',
+                    animation: 'fadeIn 0.15s ease',
+                    zIndex: 100,
                   }}>
-                    <button onClick={handleLogout} style={{ 
-                      width: '100%', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '0.75rem', 
-                      padding: '0.75rem 1rem',
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--danger)',
-                      cursor: 'pointer',
-                      borderRadius: '4px',
-                      textAlign: 'left'
-                    }} className="dropdown-item">
-                      <LogOut size={16} />
+                    <button
+                      onClick={handleLogout}
+                      className="dropdown-item"
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px 12px',
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--stats-loss)',
+                        cursor: 'pointer',
+                        borderRadius: '4px',
+                        textAlign: 'left',
+                        fontSize: '13px',
+                        fontFamily: 'var(--font-sans)',
+                        fontWeight: '500',
+                        transition: 'background 0.15s ease',
+                      }}
+                    >
+                      <LogOut size={15} />
                       Log Out
                     </button>
                   </div>
@@ -515,49 +624,56 @@ export default function AppShell({ children }) {
         </main>
       </div>
 
-      {/* Challenge incoming modal — position:fixed so it's above ALL stacking contexts */}
+      {/* ── Challenge incoming modal ── position:fixed so it's above ALL stacking contexts */}
       {incomingChallenge && (
         <div style={{
           position: 'fixed',
-          top: '5rem',
+          top: '72px',
           left: '50%',
           transform: 'translateX(-50%)',
-          background: 'var(--surface-1)',
-          border: '2px solid var(--accent-color)',
-          padding: '1.25rem 1.5rem',
-          borderRadius: '12px',
+          background: 'var(--surface)',
+          border: '2px solid var(--primary)',
+          padding: '16px 20px',
+          borderRadius: '4px',
           zIndex: 1000,
-          boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
+          boxShadow: 'var(--shadow-dropdown)',
           display: 'flex',
           alignItems: 'center',
-          gap: '1.5rem',
+          gap: '20px',
           minWidth: '320px',
-          animation: 'challengeSlideIn 0.3s ease'
+          animation: 'challengeSlideIn 0.25s ease',
         }}>
           <div>
-            <p style={{ margin: 0, fontWeight: 'bold', fontSize: '1rem' }}>⚔️ Challenge from {incomingChallenge.fromUsername}</p>
-            <p style={{ margin: '0.25rem 0 0', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-              {incomingChallenge.timeControlSec / 60}+{incomingChallenge.incrementSec} • 5 minutes to accept
+            <p style={{ margin: 0, fontWeight: '600', fontSize: '14px', color: 'var(--on-surface)' }}>
+              ⚔️ Challenge from {incomingChallenge.fromUsername}
+            </p>
+            <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--on-surface-variant)' }}>
+              {incomingChallenge.timeControlSec / 60}+{incomingChallenge.incrementSec} · 5 minutes to accept
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
-            <button 
+          <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+            <button
               onClick={() => handleRespondChallenge(true)}
-              style={{ 
-                background: 'var(--accent-color)', color: 'white', border: 'none', 
-                padding: '0.6rem 1.25rem', borderRadius: '6px', cursor: 'pointer',
-                fontWeight: 'bold', fontSize: '0.9rem'
+              style={{
+                background: 'var(--primary)', color: 'var(--on-primary)', border: 'none',
+                padding: '7px 16px', borderRadius: '4px', cursor: 'pointer',
+                fontWeight: '600', fontSize: '13px', fontFamily: 'var(--font-sans)',
+                transition: 'background 0.15s ease',
               }}
+              className="challenge-accept-btn"
             >
               ✓ Accept
             </button>
-            <button 
+            <button
               onClick={() => handleRespondChallenge(false)}
-              style={{ 
-                background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid var(--border-color)', 
-                padding: '0.6rem 1.25rem', borderRadius: '6px', cursor: 'pointer',
-                fontSize: '0.9rem'
+              style={{
+                background: 'transparent', color: 'var(--on-surface-variant)',
+                border: '1px solid var(--border)',
+                padding: '7px 16px', borderRadius: '4px', cursor: 'pointer',
+                fontSize: '13px', fontFamily: 'var(--font-sans)',
+                transition: 'background 0.15s ease, color 0.15s ease',
               }}
+              className="challenge-decline-btn"
             >
               ✕ Decline
             </button>
@@ -565,29 +681,30 @@ export default function AppShell({ children }) {
         </div>
       )}
 
-      {/* General toast notification — position:fixed top-right */}
+      {/* ── General toast notification ── position:fixed top-right */}
       {toastMessage && (
         <div style={{
           position: 'fixed',
-          top: '5rem',
-          right: '2rem',
-          background: 'var(--surface-1)',
-          border: '1px solid var(--border-color)',
-          borderLeft: '4px solid var(--accent-color)',
-          padding: '1rem 1.25rem',
-          borderRadius: '8px',
+          top: '72px',
+          right: '16px',
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderLeft: '3px solid var(--primary)',
+          padding: '12px 16px',
+          borderRadius: '4px',
           zIndex: 1000,
-          boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+          boxShadow: 'var(--shadow-dropdown)',
           display: 'flex',
           alignItems: 'center',
-          animation: 'fadeIn 0.3s ease',
-          maxWidth: '300px'
+          animation: 'fadeIn 0.2s ease',
+          maxWidth: '300px',
         }}>
-          <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{toastMessage}</span>
+          <span style={{ fontWeight: '500', fontSize: '13px', color: 'var(--on-surface)' }}>{toastMessage}</span>
         </div>
       )}
 
       <style>{`
+        /* Mobile breakpoints */
         @media (max-width: 768px) {
           .sidebar {
             transform: translateX(-100%) !important;
@@ -599,35 +716,82 @@ export default function AppShell({ children }) {
             margin-left: 0 !important;
             width: 100% !important;
           }
-          .mobile-menu-btn, .mobile-close {
-            display: block !important;
+          .mobile-menu-btn,
+          .mobile-close {
+            display: flex !important;
           }
         }
+
+        /* Nav link hover — Onyx inversion */
         .nav-link:hover {
-          background: rgba(255,255,255,0.05) !important;
+          background: var(--primary) !important;
+          color: var(--on-primary) !important;
         }
+        .nav-link.active:hover {
+          background: var(--on-primary) !important;
+          color: var(--primary) !important;
+          border-color: var(--border) !important;
+        }
+
+        /* Coin chip hover */
         .coin-chip:hover {
-          background: linear-gradient(135deg, rgba(234,179,8,0.28), rgba(251,191,36,0.18)) !important;
-          border-color: rgba(234,179,8,0.6) !important;
-          transform: scale(1.03);
+          background: #111111 !important;
         }
-        .user-dropdown-btn:hover {
-          background: rgba(255,255,255,0.1) !important;
+
+        /* Bell hover */
+        .bell-btn:hover {
+          background: var(--primary) !important;
+          color: var(--on-primary) !important;
         }
-        .dropdown-item:hover, .notification-item:hover {
-          background: rgba(255,255,255,0.05) !important;
+
+        /* User profile link hover */
+        .user-profile-link:hover {
+          background: var(--primary) !important;
+          color: var(--on-primary) !important;
         }
+
+        /* Chevron button hover */
+        .user-chevron-btn:hover {
+          background: var(--primary) !important;
+          color: var(--on-primary) !important;
+        }
+
+        /* Dropdown item hover */
+        .dropdown-item:hover {
+          background: var(--primary) !important;
+          color: var(--on-primary) !important;
+        }
+
+        /* Notification item hover */
+        .notification-item:hover {
+          background: var(--primary) !important;
+          color: var(--on-primary) !important;
+        }
+
+        /* Theme button hover */
         .theme-btn:hover {
-          border-color: var(--accent-color) !important;
-          color: var(--text-primary) !important;
+          background: var(--primary) !important;
+          color: var(--on-primary) !important;
         }
+
+        /* Challenge modal button hovers */
+        .challenge-accept-btn:hover {
+          background: var(--on-primary) !important;
+          color: var(--primary) !important;
+          border: 1px solid var(--border) !important;
+        }
+        .challenge-decline-btn:hover {
+          background: var(--primary) !important;
+          color: var(--on-primary) !important;
+        }
+
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
+          from { opacity: 0; transform: translateY(-6px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
         @keyframes challengeSlideIn {
-          from { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(0.95); }
-          to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+          from { opacity: 0; transform: translateX(-50%) translateY(-16px) scale(0.97); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
         }
       `}</style>
     </div>

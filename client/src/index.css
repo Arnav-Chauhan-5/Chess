@@ -1,43 +1,78 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap');
+/* ─────────────────────────────────────────────────────────────────────────
+   Onyx — Design System
+   Inter (400, 600, 700, 900)
+   ───────────────────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
 
+/* Bot-avatar subtle float (unchanged) */
 @keyframes subtleFloat {
-  0% { transform: translateY(0px) scale(1); }
-  50% { transform: translateY(-2px) scale(1.03); }
+  0%   { transform: translateY(0px) scale(1); }
+  50%  { transform: translateY(-2px) scale(1.03); }
   100% { transform: translateY(0px) scale(1); }
 }
-
 .bot-avatar-img {
   animation: subtleFloat 4s ease-in-out infinite;
 }
 
+/* ─── Token Definitions ─────────────────────────────────────────────────── */
 :root {
-  --surface-0: #080D1A;
-  --surface-1: #101827;
-  --surface-2: #18243A;
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --accent-color: #3b82f6;
-  --accent-hover: #2563eb;
-  --success: #10b981;
-  --danger: #ef4444;
-  --border-color: rgba(255, 255, 255, 0.1);
+  /* Onyx core tokens */
+  --bg:                   #000000;
+  --surface:              #0B0B0B;
+  --on-surface:           #FFFFFF;
+  --on-surface-variant:   #C4C7C8;
+  --primary:              #FFFFFF;
+  --on-primary:           #000000;
+  --primary-hover:        #000000;
+
+  /* Stats / signal colors */
+  --stats-win:            #FFFFFF;
+  --stats-loss:           #222222;
+  --stats-draw:           #666666;
+  --stats-gold:           #D4AF37;
+
+  /* Border: 1px solid on every panel — NO shadows elsewhere */
+  --border:               #222222;
+
+  /* ── Backward-compat aliases (old names → new tokens) ──────────────────
+     These keep every untouched page (GameRoom, Profile, Friends, etc.)
+     working automatically. Do NOT remove these aliases. */
+  --surface-0:            var(--bg);          /* was dark page bg #080D1A */
+  --surface-1:            var(--surface);     /* was dark card bg #101827 */
+  --surface-2:            var(--bg);          /* was nested surface #18243A */
+  --text-primary:         var(--on-surface);
+  --text-secondary:       var(--on-surface-variant);
+  --accent-color:         var(--primary);
+  --accent-hover:         var(--primary-hover);
+  --success:              var(--stats-win);   /* GameRoom, Friends, Settings */
+  --danger:               var(--stats-loss);  /* GameRoom, Friends, Login, Register */
+  --border-color:         var(--border);
+  --bg-color:             var(--bg);          /* orphan var used in Lobby/Friends/Home */
+
+  /* Typography scale custom properties */
+  --font-sans:            'Inter', system-ui, sans-serif;
+  --font-mono:            'Inter', monospace;
+
+  /* Only permitted shadow — dropdowns & modals exclusively */
+  --shadow-dropdown:      0px 4px 12px rgba(0, 0, 0, 0.5);
 }
 
+/* ─── Reset ─────────────────────────────────────────────────────────────── */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
+/* ─── Base ──────────────────────────────────────────────────────────────── */
 body {
-  font-family: 'Outfit', sans-serif;
-  background-color: var(--surface-0);
-  background-image: radial-gradient(circle at 10% 20%, rgba(255,255,255,0.01) 1px, transparent 1px),
-                    radial-gradient(circle at 90% 80%, rgba(255,255,255,0.01) 1px, transparent 1px);
-  background-size: 100px 100px;
-  color: var(--text-primary);
+  font-family: var(--font-sans);
+  background-color: var(--bg);
+  color: var(--on-surface);
+  font-size: 16px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -56,57 +91,145 @@ body {
   width: 100%;
   max-width: 1440px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 16px;
 }
 
-/* Glassmorphism utility replaced by surface-1 */
+/* ─── Surface Utilities ─────────────────────────────────────────────────── */
+
+/* Panel / card — white surface with hairline border, 4px radius, NO shadow */
 .glass-panel {
-  background: var(--surface-1);
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  background: var(--surface);
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  padding: 16px;
 }
 
+/* Nested surface — slightly recessed tonal layer */
 .surface-2 {
-  background: var(--surface-2);
-  border-radius: 8px;
-  border: none;
+  background: var(--bg);
+  border-radius: 4px;
+  border: 1px solid var(--border);
 }
 
-/* Buttons */
-.btn {
-  background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 0.75rem 1.5rem;
-  font-family: 'Outfit', sans-serif;
+/* ─── Typography Utilities ──────────────────────────────────────────────── */
+
+/* Section-header caps label: "YOUR STATS", "RECENT FORM", etc. */
+.label-caps {
+  font-family: var(--font-sans);
+  font-size: 11px;
   font-weight: 600;
-  font-size: 1rem;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+}
+
+/* Monospaced data: ELO ratings, clock/timer numbers */
+.mono-data {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Button ────────────────────────────────────────────────────────────── */
+.btn {
+  background: var(--primary);
+  color: var(--on-primary);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 0 20px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 14px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  /* Color-shift transition only — NO transform, NO shadow */
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  height: 44px; /* Consistent height */
+  gap: 6px;
+  height: 40px;
 }
 
 .btn:hover {
-  transform: scale(1.02);
-  box-shadow: 0 0 16px rgba(59, 130, 246, 0.4);
+  background: var(--primary-hover);
+  color: var(--primary);
+  border-color: var(--primary);
 }
 
 .btn:active {
-  transform: scale(0.98);
+  background: var(--primary-hover);
+  color: var(--primary);
+  border-color: var(--primary);
 }
 
-/* Micro-animations */
+.btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ─── Input ─────────────────────────────────────────────────────────────── */
+input, textarea, select {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--on-surface);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  transition: border-color 0.15s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--on-surface-variant);
+}
+
+/* ─── Animations ────────────────────────────────────────────────────────── */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.4s ease-out forwards;
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+/* ─── Custom Scrollbar ──────────────────────────────────────────────────── */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--bg);
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--on-surface-variant);
+  opacity: 0.4;
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--on-surface);
+}
+
+/* ─── Loading shimmer ────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  from { background-position: -200% center; }
+  to   { background-position:  200% center; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg) 25%,
+    rgba(255,255,255,0.06) 50%,
+    var(--bg) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 4px;
 }
