@@ -3,6 +3,7 @@ import { Settings as SettingsIcon, Link as LinkIcon, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { Link } from 'react-router-dom';
+import { API_URL } from '../config';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -19,7 +20,7 @@ export default function Settings() {
     if (!user) return;
     const fetchProfile = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/users/profile?userId=${user.id}`);
+        const res = await fetch(`${API_URL}/users/profile?userId=${user.id}`);
         const data = await res.json();
         if (res.ok) {
           setShowOnlineStatus(data.user.showOnlineStatus ?? true);
@@ -37,7 +38,7 @@ export default function Settings() {
     setShowOnlineStatus(val);
     setPrivacyMsg('');
     try {
-      const res = await fetch('http://localhost:3000/users/settings', {
+      const res = await fetch(`${API_URL}/users/settings`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, showOnlineStatus: val })
@@ -63,7 +64,7 @@ export default function Settings() {
     }
     
     try {
-      const res = await fetch('http://localhost:3000/auth/change-password', {
+      const res = await fetch(`${API_URL}/auth/change-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Logo from '../components/Logo';
 import { LogIn, Crown } from 'lucide-react';
+import { API_URL } from '../config';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -28,7 +29,7 @@ export default function Login() {
   };
 
   const handleOAuth = (provider) => {
-    window.location.href = `http://localhost:3000/auth/${provider}`;
+    window.location.href = `${API_URL}/auth/${provider}`;
   };
 
   return (

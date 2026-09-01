@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../hooks/useSocket';
 import { Users, UserPlus, Check, X, Swords, Clock } from 'lucide-react';
+import { API_URL } from '../config';
 
 export default function Friends() {
   const { user, token } = useAuth();
@@ -20,7 +21,7 @@ export default function Friends() {
   const fetchFriends = async () => {
     if (!user?.id || !token) return;
     try {
-      const res = await fetch(`http://localhost:3000/friends/${user.id}`, {
+      const res = await fetch(`${API_URL}/friends/${user.id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -102,7 +103,7 @@ export default function Friends() {
     }
     
     try {
-      const res = await fetch('http://localhost:3000/friends/request', {
+      const res = await fetch(`${API_URL}/friends/request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -124,7 +125,7 @@ export default function Friends() {
 
   const respondToRequest = async (friendshipId, accept) => {
     try {
-      const res = await fetch('http://localhost:3000/friends/respond', {
+      const res = await fetch(`${API_URL}/friends/respond`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

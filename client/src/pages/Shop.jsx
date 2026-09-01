@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../hooks/useSocket";
 import { ShoppingBag, Zap, Check, Lock } from "lucide-react";
+import { API_URL } from '../config';
 
-const API = "http://localhost:3000";
+const API = `${API_URL}`;
 
 function BoardSwatch({ light, dark, size = 64 }) {
   const cells = [];

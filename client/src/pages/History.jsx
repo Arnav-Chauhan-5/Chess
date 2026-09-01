@@ -3,6 +3,7 @@ import { History as HistoryIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { getTimeCategory } from '../utils/timeControl';
+import { API_URL } from '../config';
 
 export default function History() {
   const { user } = useAuth();
@@ -13,7 +14,7 @@ export default function History() {
     if (!user) return;
     const fetchHistory = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/games/recent?userId=${user.id}&limit=20`);
+        const res = await fetch(`${API_URL}/games/recent?userId=${user.id}&limit=20`);
         const data = await res.json();
         if (res.ok) setGames(data.games || []);
       } catch (err) {

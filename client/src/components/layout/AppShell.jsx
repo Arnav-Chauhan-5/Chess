@@ -6,6 +6,7 @@ import { useOutsideClick } from '../../hooks/useOutsideClick';
 import { useSettings } from '../../context/SettingsContext';
 import { Play, Trophy, History, User as UserIcon, Settings, LogOut, Menu, X, ChevronDown, Eye, Users, Bell, BookOpen, Monitor, ShoppingBag, Moon } from 'lucide-react';
 import Logo from '../Logo';
+import { API_URL } from '../../config';
 
 export default function AppShell({ children }) {
   const { user, token, logout } = useAuth();
@@ -30,7 +31,7 @@ export default function AppShell({ children }) {
 
   useEffect(() => {
     if (!user || !token) return;
-    fetch(`http://localhost:3000/notifications/${user.id}`, {
+    fetch(`${API_URL}/notifications/${user.id}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(async r => {
@@ -48,7 +49,7 @@ export default function AppShell({ children }) {
   // Fetch coin balance on mount
   useEffect(() => {
     if (!user || !token) return;
-    fetch(`http://localhost:3000/users/daily-challenge?userId=${user.id}`, {
+    fetch(`${API_URL}/users/daily-challenge?userId=${user.id}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(r => r.ok ? r.json() : null)
@@ -145,7 +146,7 @@ export default function AppShell({ children }) {
     // Mark as read
     if (!notification.read) {
       try {
-        await fetch(`http://localhost:3000/notifications/${notification.id}/read`, {
+        await fetch(`${API_URL}/notifications/${notification.id}/read`, {
           method: 'PATCH',
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -445,7 +446,7 @@ export default function AppShell({ children }) {
                         <button
                           onClick={async () => {
                             try {
-                              await fetch('http://localhost:3000/notifications/mark-all-read', {
+                              await fetch(`${API_URL}/notifications/mark-all-read`, {
                                 method: 'PATCH',
                                 headers: { 'Authorization': `Bearer ${token}` }
                               });

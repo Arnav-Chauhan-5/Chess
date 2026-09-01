@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Trophy } from 'lucide-react';
+import { API_URL } from '../config';
 
 export default function Leaderboard() {
   const [users, setUsers] = useState([]);
@@ -8,7 +9,7 @@ export default function Leaderboard() {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        const res = await fetch('http://localhost:3000/users/leaderboard?limit=50');
+        const res = await fetch(`${API_URL}/users/leaderboard?limit=50`);
         const data = await res.json();
         if (res.ok) setUsers(data.users || []);
       } catch (err) {

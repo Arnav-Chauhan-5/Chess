@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import DecorativeBoard from '../components/DecorativeBoard';
 import { Play, Users, Zap, Flame, Snail, Timer, Bot, Eye, BarChart2, UserPlus, Swords, Trophy, TrendingUp, Clock, Gift } from 'lucide-react';
 import { getTimeCategory } from '../utils/timeControl';
+import { API_URL } from '../config';
 
 const PRESETS = [
   { label: '1+0', icon: Zap },
@@ -130,7 +131,7 @@ export default function Lobby() {
 
     // Fetch user profile stats
     if (user) {
-      fetch(`http://localhost:3000/users/profile?userId=${user.id}`, {
+      fetch(`${API_URL}/users/profile?userId=${user.id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
         .then(res => res.json())
@@ -143,7 +144,7 @@ export default function Lobby() {
         .catch(err => console.error(err));
 
       // Fetch today's daily challenge status
-      fetch(`http://localhost:3000/users/daily-challenge?userId=${user.id}`, {
+      fetch(`${API_URL}/users/daily-challenge?userId=${user.id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
         .then(res => res.json())
@@ -153,7 +154,7 @@ export default function Lobby() {
         .catch(err => console.error('daily-challenge fetch:', err));
 
       // Fetch friends
-      fetch(`http://localhost:3000/friends/${user.id}`, {
+      fetch(`${API_URL}/friends/${user.id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
         .then(res => res.json())
@@ -184,7 +185,7 @@ export default function Lobby() {
 
     socket.on('friend_status_changed', ({ userId, isOnline }) => {
       if (user) {
-        fetch(`http://localhost:3000/friends/${user.id}`, {
+        fetch(`${API_URL}/friends/${user.id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
           .then(res => res.json())
@@ -246,7 +247,7 @@ export default function Lobby() {
     setSearchError('');
     setSearchResult(null);
     try {
-      const res = await fetch(`http://localhost:3000/users/search?username=${encodeURIComponent(searchUsername.trim())}`, {
+      const res = await fetch(`${API_URL}/users/search?username=${encodeURIComponent(searchUsername.trim())}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();

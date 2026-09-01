@@ -3,6 +3,7 @@ import { User, Edit2, Link as LinkIcon, Trash2, Check, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { getTimeCategory } from '../utils/timeControl';
+import { API_URL } from '../config';
 
 export default function Profile() {
   const { user, login } = useAuth();
@@ -16,7 +17,7 @@ export default function Profile() {
 
   const fetchProfile = async () => {
     try {
-      const res = await fetch(`http://localhost:3000/users/profile?userId=${user.id}`);
+      const res = await fetch(`${API_URL}/users/profile?userId=${user.id}`);
       const data = await res.json();
       if (res.ok) {
         setProfileData(data);
@@ -37,7 +38,7 @@ export default function Profile() {
   const handleSaveProfile = async () => {
     setEditError('');
     try {
-      const res = await fetch('http://localhost:3000/users/profile', {
+      const res = await fetch(`${API_URL}/users/profile`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, username: editUsername })
@@ -59,7 +60,7 @@ export default function Profile() {
   const handleUnlink = async (provider) => {
     setUnlinkError('');
     try {
-      const res = await fetch(`http://localhost:3000/users/oauth/${provider}?userId=${user.id}`, {
+      const res = await fetch(`${API_URL}/users/oauth/${provider}?userId=${user.id}`, {
         method: 'DELETE'
       });
       const data = await res.json();
