@@ -61,11 +61,10 @@ router.get('/profile', async (req, res) => {
 
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    const games = await prisma.game.findMany({
+    const allGames = await prisma.game.findMany({
       where: {
         OR: [{ whiteId: userId }, { blackId: userId }],
-        status: { not: 'IN_PROGRESS' },
-        isCasual: false
+        status: { not: 'IN_PROGRESS' }
       },
       orderBy: { createdAt: 'desc' },
       include: {
@@ -74,19 +73,14 @@ router.get('/profile', async (req, res) => {
       }
     });
 
-    const casualGamesCount = await prisma.game.count({
-      where: {
-        OR: [{ whiteId: userId }, { blackId: userId }],
-        status: { not: 'IN_PROGRESS' },
-        isCasual: true
-      }
-    });
+    const rankedGames = allGames.filter(g => !g.isCasual);
+    const casualGamesCount = allGames.length - rankedGames.length;
 
     let wins = 0;
     let losses = 0;
     let draws = 0;
 
-    games.forEach(game => {
+    rankedGames.forEach(game => {
       const isWhite = game.whiteId === userId;
       if (game.status === 'DRAW') {
         draws++;
@@ -103,8 +97,8 @@ router.get('/profile', async (req, res) => {
 
     res.json({ 
       user: { ...user, hasPassword }, 
-      stats: { wins, losses, draws, total: games.length, casualTotal: casualGamesCount, bestRating: user.bestRating, bestRatingDate: user.bestRatingDate },
-      recentGames: games.slice(0, 20) // Give top 20 for profile
+      stats: { wins, losses, draws, total: rankedGames.length, casualTotal: casualGamesCount, bestRating: user.bestRating, bestRatingDate: user.bestRatingDate },
+      recentGames: allGames.slice(0, 20) // Give top 20 for profile
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch profile' });

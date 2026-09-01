@@ -411,7 +411,7 @@ export default function AppShell({ children }) {
                   {unreadCount > 0 && (
                     <span style={{
                       position: 'absolute', top: '2px', right: '2px',
-                      background: 'var(--stats-loss)', color: 'white',
+                      background: 'var(--color-loss)', color: 'white',
                       fontSize: '10px', fontWeight: '700',
                       width: '15px', height: '15px', borderRadius: '50%',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -599,7 +599,7 @@ export default function AppShell({ children }) {
                         padding: '8px 12px',
                         background: 'none',
                         border: 'none',
-                        color: 'var(--stats-loss)',
+                        color: 'var(--color-loss)',
                         cursor: 'pointer',
                         borderRadius: '4px',
                         textAlign: 'left',
@@ -724,13 +724,10 @@ export default function AppShell({ children }) {
 
         /* Nav link hover — Onyx inversion */
         .nav-link:hover {
-          background: var(--primary) !important;
-          color: var(--on-primary) !important;
+          background: rgba(255, 255, 255, 0.08) !important;
         }
         .nav-link.active:hover {
-          background: var(--on-primary) !important;
-          color: var(--primary) !important;
-          border-color: var(--border) !important;
+          background: rgba(255, 255, 255, 0.08) !important;
         }
 
         /* Coin chip hover */
@@ -740,38 +737,32 @@ export default function AppShell({ children }) {
 
         /* Bell hover */
         .bell-btn:hover {
-          background: var(--primary) !important;
-          color: var(--on-primary) !important;
+          background: rgba(255, 255, 255, 0.08) !important;
         }
 
         /* User profile link hover */
         .user-profile-link:hover {
-          background: var(--primary) !important;
-          color: var(--on-primary) !important;
+          background: rgba(255, 255, 255, 0.08) !important;
         }
 
         /* Chevron button hover */
         .user-chevron-btn:hover {
-          background: var(--primary) !important;
-          color: var(--on-primary) !important;
+          background: rgba(255, 255, 255, 0.08) !important;
         }
 
         /* Dropdown item hover */
         .dropdown-item:hover {
-          background: var(--primary) !important;
-          color: var(--on-primary) !important;
+          background: rgba(255, 255, 255, 0.08) !important;
         }
 
         /* Notification item hover */
         .notification-item:hover {
-          background: var(--primary) !important;
-          color: var(--on-primary) !important;
+          background: rgba(255, 255, 255, 0.08) !important;
         }
 
         /* Theme button hover */
         .theme-btn:hover {
-          background: var(--primary) !important;
-          color: var(--on-primary) !important;
+          background: rgba(255, 255, 255, 0.08) !important;
         }
 
         /* Challenge modal button hovers */

@@ -25,11 +25,16 @@
   --on-primary:           #000000;
   --primary-hover:        #000000;
 
-  /* Stats / signal colors */
-  --stats-win:            #FFFFFF;
-  --stats-loss:           #222222;
-  --stats-draw:           #666666;
-  --stats-gold:           #D4AF37;
+  /* Stats / signal colors — Onyx monochrome design */
+  --stats-win:            #FFFFFF;   /* W result — white dot/text on dark surface */
+  --stats-loss:           #222222;   /* L result — dark dot on dark (decorative only) */
+  --stats-draw:           #666666;   /* D result — mid-gray */
+  --stats-gold:           #D4AF37;   /* rankings / coin accents */
+
+  /* Semantic signal colors — always readable on --surface/--bg */
+  --color-win:            #4ADE80;   /* green — used where text/bg needs contrast */
+  --color-loss:           #F87171;   /* red   — used where text/bg needs contrast */
+  --color-draw:           #94A3B8;   /* muted blue-gray for draws */
 
   /* Border: 1px solid on every panel — NO shadows elsewhere */
   --border:               #222222;
@@ -44,8 +49,8 @@
   --text-secondary:       var(--on-surface-variant);
   --accent-color:         var(--primary);
   --accent-hover:         var(--primary-hover);
-  --success:              var(--stats-win);   /* GameRoom, Friends, Settings */
-  --danger:               var(--stats-loss);  /* GameRoom, Friends, Login, Register */
+  --success:              var(--color-win);   /* GameRoom, Friends, Settings */
+  --danger:               var(--color-loss);  /* GameRoom, Friends, Login, Register */
   --border-color:         var(--border);
   --bg-color:             var(--bg);          /* orphan var used in Lobby/Friends/Home */
 

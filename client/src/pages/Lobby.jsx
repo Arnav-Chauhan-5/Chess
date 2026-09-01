@@ -55,7 +55,7 @@ function RatingSparkline({ recentGames, userId }) {
 
   const d = points.map((v, i) => `${i === 0 ? 'M' : 'L'} ${toX(i).toFixed(1)} ${toY(v).toFixed(1)}`).join(' ');
   const trend = points[points.length - 1] >= points[0];
-  const strokeColor = trend ? 'var(--stats-win)' : 'var(--stats-loss)';
+  const strokeColor = trend ? 'var(--color-win)' : 'var(--color-loss)';
 
   return (
     <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', marginTop: '0.5rem' }}>
@@ -397,7 +397,7 @@ export default function Lobby() {
 
     const winRate = userStats.total > 0 ? Math.round((userStats.wins / userStats.total) * 100) : 0;
     const deltaPrefix = ratingDelta > 0 ? '▲ +' : ratingDelta < 0 ? '▼ ' : '';
-    const deltaColor = ratingDelta > 0 ? 'var(--stats-win)' : ratingDelta < 0 ? 'var(--stats-loss)' : 'var(--on-surface-variant)';
+    const deltaColor = ratingDelta > 0 ? 'var(--color-win)' : ratingDelta < 0 ? 'var(--color-loss)' : 'var(--on-surface-variant)';
 
     return { ratingDelta, deltaPrefix, deltaColor, currentStreak, streakType, winRate };
   })();
@@ -617,7 +617,7 @@ export default function Lobby() {
                     <div style={{ fontSize: '12px', color: 'var(--on-surface-variant)', marginTop: '2px' }}>
                       <span style={{ color: 'var(--stats-win)', fontWeight: '500' }}>{userStats.wins}W</span>
                       {' '}
-                      <span style={{ color: 'var(--stats-loss)', fontWeight: '500' }}>{userStats.losses}L</span>
+                      <span style={{ color: 'var(--color-loss)', fontWeight: '500' }}>{userStats.losses}L</span>
                       {' '}
                       <span style={{ color: 'var(--stats-draw)', fontWeight: '500' }}>{userStats.draws}D</span>
                     </div>
@@ -649,7 +649,7 @@ export default function Lobby() {
                   {/* Current Streak */}
                   <div className="surface-2" style={{ padding: '10px 12px' }}>
                     <div className="label-caps" style={{ marginBottom: '4px' }}>Streak</div>
-                    <div style={{ fontSize: '20px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: computedStats.streakType === 'W' && computedStats.currentStreak >= 3 ? 'var(--stats-gold)' : computedStats.streakType === 'L' && computedStats.currentStreak >= 3 ? 'var(--stats-loss)' : 'var(--on-surface)' }}>
+                    <div style={{ fontSize: '20px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', color: computedStats.streakType === 'W' && computedStats.currentStreak >= 3 ? 'var(--stats-gold)' : computedStats.streakType === 'L' && computedStats.currentStreak >= 3 ? 'var(--color-loss)' : 'var(--on-surface)' }}>
                       {computedStats.streakType === 'W' && computedStats.currentStreak >= 3 && <Flame size={16} />}
                       {computedStats.currentStreak} {computedStats.streakType || 'W'}
                     </div>
@@ -667,8 +667,8 @@ export default function Lobby() {
                       recentGames.slice(0, 10).map((game, i) => {
                         const isWhite = game.whiteId === user?.id;
                         let resultColor = 'var(--stats-draw)';
-                        if (game.status === 'WHITE_WON') resultColor = isWhite ? 'var(--stats-win)' : 'var(--stats-loss)';
-                        if (game.status === 'BLACK_WON') resultColor = !isWhite ? 'var(--stats-win)' : 'var(--stats-loss)';
+                        if (game.status === 'WHITE_WON') resultColor = isWhite ? 'var(--color-win)' : 'var(--color-loss)';
+                        if (game.status === 'BLACK_WON') resultColor = !isWhite ? 'var(--color-win)' : 'var(--color-loss)';
                         return (
                           <div
                             key={i}
@@ -913,7 +913,7 @@ export default function Lobby() {
                                             padding: '4px 8px', borderRadius: '4px', border: '1px solid',
                                             borderColor: aiTimePreset === p.label ? 'var(--primary)' : 'var(--border)',
                                             background: aiTimePreset === p.label ? 'var(--primary)' : 'var(--surface)',
-                                            color: aiTimePreset === p.label ? 'white' : 'var(--on-surface)',
+                                            color: aiTimePreset === p.label ? 'var(--on-primary)' : 'var(--on-surface)',
                                             cursor: 'pointer', fontSize: '12px',
                                             fontWeight: aiTimePreset === p.label ? '600' : '400',
                                             fontFamily: 'var(--font-sans)',
@@ -930,7 +930,7 @@ export default function Lobby() {
                                     <div style={{ display: 'flex', gap: '4px' }}>
                                       <button onClick={() => handleStartAIGame(bot, 'white')} className="ai-color-btn" style={{ flex: 1, padding: '7px', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--on-surface)', cursor: 'pointer', fontWeight: '500', fontSize: '12px', fontFamily: 'var(--font-sans)', transition: 'background 0.15s ease' }}>♔ White</button>
                                       <button onClick={() => handleStartAIGame(bot, 'random')} className="ai-color-btn" style={{ flex: 1, padding: '7px', borderRadius: '4px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--on-surface-variant)', cursor: 'pointer', fontWeight: '500', fontSize: '12px', fontFamily: 'var(--font-sans)', transition: 'background 0.15s ease' }}>⚄ Random</button>
-                                      <button onClick={() => handleStartAIGame(bot, 'black')} className="ai-color-btn" style={{ flex: 1, padding: '7px', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--on-surface)', color: 'white', cursor: 'pointer', fontWeight: '500', fontSize: '12px', fontFamily: 'var(--font-sans)', transition: 'background 0.15s ease' }}>♚ Black</button>
+                                      <button onClick={() => handleStartAIGame(bot, 'black')} className="ai-color-btn" style={{ flex: 1, padding: '7px', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--on-surface)', color: 'var(--bg)', cursor: 'pointer', fontWeight: '500', fontSize: '12px', fontFamily: 'var(--font-sans)', transition: 'background 0.15s ease' }}>♚ Black</button>
                                     </div>
                                   </div>
                                 </div>
@@ -989,7 +989,7 @@ export default function Lobby() {
                   </div>
 
                   {statusMessage && (
-                    <div style={{ background: 'var(--stats-win)', color: 'white', padding: '8px 12px', borderRadius: '4px', fontSize: '13px', textAlign: 'center' }}>
+                    <div style={{ background: 'var(--color-win)', color: '#000', padding: '8px 12px', borderRadius: '4px', fontSize: '13px', textAlign: 'center' }}>
                       {statusMessage}
                     </div>
                   )}
@@ -1003,7 +1003,7 @@ export default function Lobby() {
                           <div style={{ textAlign: 'center', padding: '24px 12px', background: 'var(--bg)', borderRadius: '4px', border: '1px solid var(--border)' }}>
                             <div style={{ fontSize: '14px', marginBottom: '8px', color: 'var(--on-surface)' }}>Searching for opponent...</div>
                             <p style={{ color: 'var(--primary)', marginBottom: '16px', fontSize: '16px', fontWeight: '600', fontFamily: 'var(--font-mono)' }}>{selectedPreset}</p>
-                            <button onClick={handleCancelQueue} className="btn" style={{ padding: '0 20px', background: 'var(--stats-loss)' }}>
+                            <button onClick={handleCancelQueue} className="btn" style={{ padding: '0 20px', background: 'var(--color-loss)' }}>
                               Cancel Search
                             </button>
                           </div>
@@ -1099,7 +1099,7 @@ export default function Lobby() {
                           <button type="submit" className="btn" style={{ padding: '0 14px', fontSize: '13px' }}>Find</button>
                         </form>
 
-                        {searchError && <div style={{ color: 'var(--stats-loss)', fontSize: '13px' }}>{searchError}</div>}
+                        {searchError && <div style={{ color: 'var(--color-loss)', fontSize: '13px' }}>{searchError}</div>}
 
                         {searchResult && (
                           <div className="surface-2" style={{ display: 'flex', flexDirection: 'column' }}>
@@ -1270,7 +1270,7 @@ export default function Lobby() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-                {recentGames.slice(0, 3).map((game, idx) => {
+                {recentGames.slice(0, 2).map((game, idx) => {
                   const isWhite = game.whiteId === user?.id;
 
                   // Opponent name
@@ -1291,12 +1291,12 @@ export default function Lobby() {
 
                   if (won) {
                     phrase = `You won against ${oppName}`;
-                    outcomeColor = 'var(--stats-win)';
-                    dotColor = 'var(--stats-win)';
+                    outcomeColor = 'var(--color-win)';
+                    dotColor = 'var(--color-win)';
                   } else if (lost) {
                     phrase = `You were beat by ${oppName}`;
-                    outcomeColor = 'var(--stats-loss)';
-                    dotColor = 'var(--stats-loss)';
+                    outcomeColor = 'var(--color-loss)';
+                    dotColor = 'var(--color-loss)';
                   } else {
                     phrase = `Draw with ${oppName}`;
                     outcomeColor = 'var(--stats-draw)';
@@ -1305,15 +1305,21 @@ export default function Lobby() {
 
                   // Rating delta
                   const delta = isWhite ? game.whiteRatingDelta : game.blackRatingDelta;
-                  const deltaText =
-                    delta == null ? null
+                  
+                  let deltaText, deltaColor;
+                  
+                  if (game.isCasual) {
+                    deltaText = 'Casual';
+                    deltaColor = 'var(--on-surface-variant)';
+                  } else {
+                    deltaText = delta == null ? null
                       : delta > 0 ? `+${delta}`
                         : delta < 0 ? `${delta}`
                           : '0';
-                  const deltaColor =
-                    delta > 0 ? 'var(--stats-win)'
-                      : delta < 0 ? 'var(--stats-loss)'
+                    deltaColor = delta > 0 ? 'var(--color-win)'
+                      : delta < 0 ? 'var(--color-loss)'
                         : 'var(--on-surface-variant)';
+                  }
 
                   // Relative timestamp
                   const relTime = (() => {
@@ -1341,7 +1347,7 @@ export default function Lobby() {
                         alignItems: 'center',
                         gap: '10px',
                         padding: '10px 6px',
-                        borderBottom: idx < Math.min(recentGames.length, 3) - 1
+                        borderBottom: idx < Math.min(recentGames.length, 2) - 1
                           ? '1px solid var(--border)'
                           : 'none',
                         transition: 'background 0.15s ease',
@@ -1415,81 +1421,45 @@ export default function Lobby() {
       <style>{`
         /* ── Lobby hover states: Onyx Inversion ── */
         .lobby-action-card:hover {
-          background: var(--primary) !important;
-          border-color: var(--primary) !important;
-        }
-        .lobby-action-card:hover .action-title,
-        .lobby-action-card:hover .action-subtitle {
-          color: var(--on-primary) !important;
-        }
-        .lobby-action-card:hover .action-icon {
-          background: var(--on-primary) !important;
-          color: var(--primary) !important;
+          background: rgba(255, 255, 255, 0.08) !important;
+          border-color: rgba(255, 255, 255, 0.2) !important;
         }
 
         .activity-row:hover {
-          background: var(--primary) !important;
-        }
-        .activity-row:hover * {
-          color: var(--on-primary) !important;
-          border-color: var(--on-primary) !important;
+          background: rgba(255, 255, 255, 0.08) !important;
         }
 
         .view-stats-link:hover {
-          background: var(--primary) !important;
-          color: var(--on-primary) !important;
-        }
-        .view-stats-link:hover * {
-          color: var(--on-primary) !important;
+          background: rgba(255, 255, 255, 0.08) !important;
         }
 
         .preset-btn:hover {
-          background: var(--primary) !important;
-          color: var(--on-primary) !important;
-          border-color: var(--primary) !important;
-        }
-        .preset-btn:hover .preset-icon {
-          color: var(--on-primary) !important;
-        }
-        .preset-btn:hover div {
-          color: var(--on-primary) !important;
+          background: rgba(255, 255, 255, 0.08) !important;
+          border-color: rgba(255, 255, 255, 0.2) !important;
         }
 
         .ai-bot-btn:hover {
-          background: var(--primary) !important;
-          border-color: var(--primary) !important;
-        }
-        .ai-bot-btn:hover * {
-          color: var(--on-primary) !important;
-        }
-        .ai-bot-btn:hover .bot-avatar-inner {
-          color: white !important;
+          background: rgba(255, 255, 255, 0.08) !important;
+          border-color: rgba(255, 255, 255, 0.2) !important;
         }
 
         .ai-color-btn:hover {
-          background: var(--primary) !important;
-          color: var(--on-primary) !important;
-          border-color: var(--primary) !important;
+          background: rgba(255, 255, 255, 0.08) !important;
+          border-color: rgba(255, 255, 255, 0.2) !important;
         }
 
         .seek-row:hover {
-          background: var(--primary) !important;
-        }
-        .seek-row:hover * {
-          color: var(--on-primary) !important;
+          background: rgba(255, 255, 255, 0.08) !important;
         }
 
         .preset-challenge-btn:hover {
-          background: var(--primary) !important;
-          border-color: var(--primary) !important;
-        }
-        .preset-challenge-btn:hover * {
-          color: var(--on-primary) !important;
+          background: rgba(255, 255, 255, 0.08) !important;
+          border-color: rgba(255, 255, 255, 0.2) !important;
         }
 
         .view-all-bots-link:hover {
-          background: var(--primary) !important;
-          color: var(--on-primary) !important;
+          background: rgba(255, 255, 255, 0.08) !important;
+          color: var(--on-surface) !important;
         }
 
         @media (max-width: 1100px) {
