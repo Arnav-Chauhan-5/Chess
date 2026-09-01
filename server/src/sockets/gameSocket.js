@@ -195,6 +195,7 @@ async function finalizeGame(io, gameId, game, status, reason) {
   
   gameState.deleteGame(gameId);
   stopClockCheck(gameId);
+  aiService.cleanupEngine(gameId);
   
   // Broadcast updated live games list since one just finished
   io.emit('live_games_updated', gameService.getLiveGames());
@@ -456,7 +457,7 @@ module.exports = (io, socket) => {
             const aiGame = getActiveGame(gameId);
             calculateTime(aiGame);
             
-            const bestMove = await aiService.getBestMove(aiGame.chess.fen(), aiGame.aiDifficulty);
+            const bestMove = await aiService.getBestMove(gameId, aiGame.chess.fen(), aiGame.aiDifficulty);
             const aiMoveResult = aiGame.chess.move(bestMove);
             
             aiGame.lastMoveTime = Date.now();

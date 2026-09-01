@@ -1,46 +1,50 @@
-const stockfish = require('stockfish');
+const { Worker } = require('worker_threads');
+const path = require('path');
 const { Chess } = require('chess.js');
+
 class AIService {
   constructor() {
-    this.engine = null;
-    this.isReady = false;
-    this.messageHandlers = new Set();
-    this.initEngine();
+    this.engines = new Map(); // gameId -> { worker, handlers }
   }
 
-  async initEngine() {
-    try {
-      const sf = await stockfish();
-      this.engine = sf;
+  getEngineWorker(gameId) {
+    if (!this.engines.has(gameId)) {
+      const worker = new Worker(path.join(__dirname, 'stockfishWorker.js'));
+      const handlers = new Set();
       
-      // Intercept stockfish's output which defaults to console.log in Node.js
-      const origLog = console.log;
-      console.log = (...args) => {
-        const msg = args.join(' ');
-        
-        // Route potential stockfish messages to our handlers
-        if (typeof msg === 'string' && (msg.startsWith('bestmove') || msg.startsWith('info') || msg.startsWith('id') || msg.startsWith('option') || msg.startsWith('uci') || msg.startsWith('Stockfish'))) {
-          for (const handler of this.messageHandlers) {
+      worker.on('message', (msg) => {
+        if (msg === 'ready') {
+          worker.postMessage('uci');
+          worker.postMessage('setoption name Threads value 1');
+          worker.postMessage('setoption name Hash value 16');
+        } else {
+          for (const handler of handlers) {
             handler(msg);
           }
-          // Suppress raw stockfish chatter from the terminal
-          return;
         }
-        
-        origLog(...args);
-      };
+      });
       
-      const send = this.engine.sendCommand || this.engine.postMessage;
-      if (typeof send === 'function') {
-        send.call(this.engine, 'uci');
-      }
-    } catch (e) {
-      console.warn("Failed to initialize Stockfish:", e.message);
+      worker.on('error', (err) => console.error(`Worker error for game ${gameId}:`, err));
+      worker.on('exit', (code) => {
+        if (code !== 0) console.error(`Worker stopped with exit code ${code} for game ${gameId}`);
+        this.engines.delete(gameId);
+      });
+
+      this.engines.set(gameId, { worker, handlers });
+    }
+    return this.engines.get(gameId);
+  }
+
+  cleanupEngine(gameId) {
+    if (this.engines.has(gameId)) {
+      const { worker } = this.engines.get(gameId);
+      worker.postMessage('quit');
+      this.engines.delete(gameId);
+      console.log(`[aiService] Cleaned up engine for game ${gameId}`);
     }
   }
 
-  async getBestMove(fen, difficulty = 5) {
-    if (!this.engine) throw new Error('AI not ready');
+  async getBestMove(gameId, fen, difficulty = 5) {
     return new Promise((resolve, reject) => {
       const isSub1320 = difficulty <= 3;
 
@@ -65,23 +69,23 @@ class AIService {
           }
         }
 
+        const engineData = this.getEngineWorker(gameId);
         const onMessage = (msg) => {
           if (typeof msg === 'string' && msg.startsWith('bestmove')) {
             const move = msg.split(' ')[1];
-            this.messageHandlers.delete(onMessage);
+            engineData.handlers.delete(onMessage);
             resolve(move);
           }
         };
         
-        this.messageHandlers.add(onMessage);
+        engineData.handlers.add(onMessage);
 
-        const send = this.engine.sendCommand || this.engine.postMessage;
-        send.call(this.engine, 'setoption name UCI_LimitStrength value false');
-        send.call(this.engine, `position fen ${fen}`);
-        send.call(this.engine, `go depth ${depth}`);
+        engineData.worker.postMessage('setoption name UCI_LimitStrength value false');
+        engineData.worker.postMessage(`position fen ${fen}`);
+        engineData.worker.postMessage(`go depth ${depth}`);
         
         setTimeout(() => {
-          this.messageHandlers.delete(onMessage);
+          engineData.handlers.delete(onMessage);
           reject(new Error('AI timeout'));
         }, 5000);
 
@@ -97,24 +101,24 @@ class AIService {
         };
         const targetElo = difficultyToElo[difficulty] || 2850;
 
+        const engineData = this.getEngineWorker(gameId);
         const onMessage = (msg) => {
           if (typeof msg === 'string' && msg.startsWith('bestmove')) {
             const move = msg.split(' ')[1];
-            this.messageHandlers.delete(onMessage);
+            engineData.handlers.delete(onMessage);
             resolve(move);
           }
         };
         
-        this.messageHandlers.add(onMessage);
+        engineData.handlers.add(onMessage);
 
-        const send = this.engine.sendCommand || this.engine.postMessage;
-        send.call(this.engine, 'setoption name UCI_LimitStrength value true');
-        send.call(this.engine, `setoption name UCI_Elo value ${targetElo}`);
-        send.call(this.engine, `position fen ${fen}`);
-        send.call(this.engine, 'go movetime 500');
+        engineData.worker.postMessage('setoption name UCI_LimitStrength value true');
+        engineData.worker.postMessage(`setoption name UCI_Elo value ${targetElo}`);
+        engineData.worker.postMessage(`position fen ${fen}`);
+        engineData.worker.postMessage('go movetime 500');
         
         setTimeout(() => {
-          this.messageHandlers.delete(onMessage);
+          engineData.handlers.delete(onMessage);
           reject(new Error('AI timeout'));
         }, 5000);
       }

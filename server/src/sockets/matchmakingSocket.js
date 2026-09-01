@@ -146,7 +146,7 @@ module.exports = (io, socket) => {
             const aiGame = gameState.getGame(game.id);
             if (!aiGame) return;
 
-            const bestMove = await aiService.getBestMove(aiGame.chess.fen(), aiGame.aiDifficulty);
+            const bestMove = await aiService.getBestMove(game.id, aiGame.chess.fen(), aiGame.aiDifficulty);
             const aiMoveResult = aiGame.chess.move(bestMove);
             
             aiGame.lastMoveTime = Date.now();
