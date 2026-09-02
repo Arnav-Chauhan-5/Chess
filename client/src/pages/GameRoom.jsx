@@ -587,9 +587,9 @@ export default function GameRoom() {
   };
 
   return (
-    <div style={{ display: 'flex', gap: '2rem', maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
+    <div style={{ display: 'flex', gap: '2rem', maxWidth: '1200px', margin: '0 auto', padding: '1.5rem', height: 'calc(100vh - 60px)', boxSizing: 'border-box' }}>
       {/* Board Area */}
-      <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: 0, minHeight: 0 }}>
         {/* Opponent Info */}
         <div className="glass-panel" style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
@@ -629,8 +629,17 @@ export default function GameRoom() {
         )}
 
         {/* Board */}
-        <div style={{ borderRadius: '8px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', position: 'relative' }}>
-          <Chessboard
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <div style={{ 
+            width: '100%',
+            maxWidth: 'calc(100vh - 280px)', 
+            aspectRatio: '1 / 1', 
+            borderRadius: '8px', 
+            overflow: 'hidden', 
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5)', 
+            position: 'relative' 
+          }}>
+            <Chessboard
             options={{
               position: fen,
               onPieceDrop: onDrop,
@@ -724,6 +733,7 @@ export default function GameRoom() {
               </div>
             </>
           )}
+          </div>
         </div>
 
         {/* Player Info */}
@@ -748,10 +758,10 @@ export default function GameRoom() {
       </div>
 
       {/* Sidebar Area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem', overflow: 'hidden', minHeight: 0 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem', overflow: 'hidden', minHeight: 0, minWidth: '300px' }}>
         
         {/* Move List */}
-        <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', height: '200px', flexShrink: 0 }}>
+        <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.75rem', padding: '0 0.5rem' }}>
             <h3 style={{ margin: 0 }}>Moves</h3>
             {openingName && <span style={{ fontSize: '0.8rem', color: 'var(--accent-color)', fontWeight: 'bold' }}>{openingName}</span>}
