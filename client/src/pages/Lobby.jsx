@@ -403,6 +403,9 @@ export default function Lobby() {
     return { ratingDelta, deltaPrefix, deltaColor, currentStreak, streakType, winRate };
   })();
 
+  const myActiveGame = liveGames.find(g => g.whiteUsername === user?.username || g.blackUsername === user?.username);
+  const otherLiveGames = liveGames.filter(g => g !== myActiveGame);
+
   return (
     <div style={{ padding: '16px', maxWidth: '1600px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Greeting Header */}
@@ -549,14 +552,44 @@ export default function Lobby() {
             </div>
           </div>
 
+          {/* Active Game Banner */}
+          {myActiveGame && (
+            <div className="glass-panel animate-fade-in" style={{ padding: '12px', marginTop: '12px', border: '1px solid var(--primary)', background: 'rgba(59, 130, 246, 0.08)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <h3 style={{ margin: 0, fontSize: '13px', fontWeight: '600', color: 'var(--primary)' }}>
+                  Game In Progress
+                </h3>
+                <Play size={14} color="var(--primary)" />
+              </div>
+              <p style={{ fontSize: '13px', color: 'var(--on-surface)', margin: '0 0 12px 0' }}>
+                Your match vs <strong>{myActiveGame.whiteUsername === user?.username ? myActiveGame.blackUsername : myActiveGame.whiteUsername}</strong> is still active.
+              </p>
+              <Link
+                to={`/game/${myActiveGame.gameId}`}
+                className="btn"
+                style={{
+                  display: 'block',
+                  textAlign: 'center',
+                  textDecoration: 'none',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  fontWeight: '600',
+                  fontSize: '13px'
+                }}
+              >
+                Resume Game
+              </Link>
+            </div>
+          )}
+
           {/* Live Games below the board */}
-          {liveGames.length > 0 && (
+          {otherLiveGames.length > 0 && (
             <div className="glass-panel animate-fade-in" style={{ padding: '12px', marginTop: '12px' }}>
               <h3 style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '13px', fontWeight: '600', color: 'var(--on-surface)' }}>
                 <Eye size={14} color="var(--primary)" /> Live Games
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {liveGames.map((game, i) => (
+                {otherLiveGames.map((game, i) => (
                   <Link
                     key={i}
                     to={`/game/${game.gameId}`}
