@@ -32,10 +32,10 @@ export default function DecorativeBoard({ autoplay = true }) {
     const pieces = ['wP', 'wN', 'wB', 'wR', 'wQ', 'wK', 'bP', 'bN', 'bB', 'bR', 'bQ', 'bK'];
     const pieceComponents = {};
     pieces.forEach((p) => {
-      pieceComponents[p] = ({ squareWidth }) => (
+      pieceComponents[p] = () => (
         <img
           src={`/pieces/${pieceSetKey}/${p}.svg`}
-          style={{ width: squareWidth, height: squareWidth }}
+          style={{ width: '100%', height: '100%', display: 'block' }}
           alt={p}
         />
       );
@@ -85,7 +85,7 @@ export default function DecorativeBoard({ autoplay = true }) {
         allowDragging: false,
         darkSquareStyle: { backgroundColor: boardTheme.darkSquareColor },
         lightSquareStyle: { backgroundColor: boardTheme.lightSquareColor },
-        customPieces,
+        pieces: customPieces,
         animationDuration: autoplay ? 300 : 0
       }} />
     </div>

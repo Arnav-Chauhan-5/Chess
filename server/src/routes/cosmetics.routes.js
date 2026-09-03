@@ -1,4 +1,4 @@
-﻿const express = require("express");
+const express = require("express");
 const prisma = require("../db");
 const { isAuthenticated } = require("../middleware/auth.middleware");
 
@@ -114,7 +114,7 @@ router.post("/purchase", isAuthenticated, async (req, res) => {
           coinsBalance: { decrement: item.coinCost },
           [equipField]: cosmeticItemId,
         },
-        select: { coinsBalance: true, equippedBoardThemeId: true, equippedPieceSetId: true },
+        select: { coinsBalance: true, equippedBoardThemeId: true, equippedPieceSetId: true, equippedBoardTheme: true, equippedPieceSet: true },
       }),
       prisma.userCosmetic.create({
         data: { userId, cosmeticItemId, coinsPaid: item.coinCost },
@@ -157,7 +157,7 @@ router.post("/equip", isAuthenticated, async (req, res) => {
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: { [equipField]: cosmeticItemId },
-      select: { coinsBalance: true, equippedBoardThemeId: true, equippedPieceSetId: true },
+      select: { coinsBalance: true, equippedBoardThemeId: true, equippedPieceSetId: true, equippedBoardTheme: true, equippedPieceSet: true },
     });
 
     res.json({ success: true, updatedUser });

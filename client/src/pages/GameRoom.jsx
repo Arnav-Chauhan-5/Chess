@@ -37,10 +37,10 @@ export default function GameRoom() {
     const pieces = ['wP', 'wN', 'wB', 'wR', 'wQ', 'wK', 'bP', 'bN', 'bB', 'bR', 'bQ', 'bK'];
     const pieceComponents = {};
     pieces.forEach((p) => {
-      pieceComponents[p] = ({ squareWidth }) => (
+      pieceComponents[p] = () => (
         <img
           src={`/pieces/${pieceSetKey}/${p}.svg`}
-          style={{ width: squareWidth, height: squareWidth }}
+          style={{ width: '100%', height: '100%', display: 'block' }}
           alt={p}
         />
       );
@@ -651,7 +651,7 @@ export default function GameRoom() {
               boardOrientation: playerColor === 'w' ? 'white' : 'black',
               darkSquareStyle: { backgroundColor: boardTheme.darkSquareColor },
               lightSquareStyle: { backgroundColor: boardTheme.lightSquareColor },
-              customPieces,
+              pieces: customPieces,
               allowDragging: settings.moveInputStyle !== 'click' && gamePhase === 'PLAYING'
             }}
           />
