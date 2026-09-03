@@ -31,13 +31,13 @@ function BoardSwatch({ light, dark, size = 64 }) {
   );
 }
 
-const PIECE_GLYPHS = ["\u265a","\u265b","\u265c","\u265d","\u265e","\u265f"];
+const PIECE_IMAGES = ["wK", "wQ", "wR", "wB", "wN", "wP"];
 const PIECE_STYLES = {
-  standard: { bg: "#2a2a3e", fg: "#e8e8f0", shadow: "1px 1px 2px rgba(0,0,0,0.8)" },
-  neo:      { bg: "#111827", fg: "#60a5fa", shadow: "0 0 8px rgba(96,165,250,0.4)" },
-  cburnett: { bg: "#1c1c28", fg: "#d1d5db", shadow: "1px 1px 0 #000" },
-  tatiana:  { bg: "#1e1225", fg: "#e879f9", shadow: "0 0 6px rgba(232,121,249,0.35)" },
-  merida:   { bg: "#0f1923", fg: "#fbbf24", shadow: "0 0 8px rgba(251,191,36,0.4)" },
+  standard: { bg: "#2a2a3e" },
+  neo:      { bg: "#111827" },
+  cburnett: { bg: "#1c1c28" },
+  tatiana:  { bg: "#1e1225" },
+  merida:   { bg: "#0f1923" },
 };
 
 function PiecePreview({ pieceSetKey, size = 64 }) {
@@ -48,11 +48,15 @@ function PiecePreview({ pieceSetKey, size = 64 }) {
       border: "2px solid rgba(255,255,255,0.15)",
       display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gridTemplateRows: "repeat(2, 1fr)",
       placeItems: "center", flexShrink: 0, overflow: "hidden",
+      padding: "2px"
     }}>
-      {PIECE_GLYPHS.map(g => (
-        <span key={g} style={{ fontSize: size / 4.2, color: s.fg, textShadow: s.shadow, lineHeight: 1, userSelect: "none" }}>
-          {g}
-        </span>
+      {PIECE_IMAGES.map(img => (
+        <img 
+          key={img} 
+          src={`/pieces/${pieceSetKey}/${img}.svg`} 
+          alt={img} 
+          style={{ width: "90%", height: "90%", objectFit: "contain", filter: "drop-shadow(1px 1px 1px rgba(0,0,0,0.3))" }} 
+        />
       ))}
     </div>
   );
