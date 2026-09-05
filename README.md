@@ -167,5 +167,5 @@ The app should now be running at `http://localhost:5173`.
 This project is licensed under the [MIT License](LICENSE) - see the LICENSE file for details.
 
 ## Contact / Author
-- **Name**: [Arnav Chauhan]
+- **Name**: Arnav Chauhan
 - **GitHub**: [@Arnav-Chauhan-5](https://github.com/Arnav-Chauhan-5)
